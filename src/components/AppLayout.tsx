@@ -54,11 +54,11 @@ export function AppLayout({ children }: { children?: ReactNode }) {
                 <Link
                   key={t.to}
                   to={t.to}
-                  className="flex flex-col items-center justify-center py-2.5 text-muted-foreground transition-colors select-none"
-                  activeProps={{ className: "flex flex-col items-center justify-center py-2.5 text-primary select-none" }}
+                  className={`flex flex-col items-center justify-center py-2.5 select-none transition-colors ${isTrouble ? "text-rose-500" : "text-muted-foreground"}`}
+                  activeProps={{ className: `flex flex-col items-center justify-center py-2.5 select-none ${isTrouble ? "text-rose-600" : "text-primary"}` }}
                   activeOptions={{ exact: true }}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-5 h-5 ${isTrouble ? "fill-rose-100" : ""}`} />
                   <span className="text-[10px] mt-1 font-medium leading-none">{lang === "ja" ? t.ja : t.en}</span>
                 </Link>
               );
