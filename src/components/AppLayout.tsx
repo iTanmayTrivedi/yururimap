@@ -1,14 +1,15 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Smile, Luggage, Users, PartyPopper, BarChart3, Languages } from "lucide-react";
+import { Smile, Luggage, Users, PartyPopper, BarChart3, Languages, AlertCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
 
 const tabs = [
-  { to: "/",       icon: Smile,       ja: "気持ち",   en: "Mood" },
-  { to: "/my",     icon: Luggage,     ja: "旅ログ",   en: "Trip Log" },
-  { to: "/share",  icon: Users,       ja: "つながり", en: "Connect" },
-  { to: "/events", icon: PartyPopper, ja: "イベント", en: "Events" },
-  { to: "/stats",  icon: BarChart3,   ja: "集計",     en: "Stats" },
+  { to: "/",        icon: Smile,       ja: "気持ち",   en: "Mood" },
+  { to: "/trouble", icon: AlertCircle, ja: "困った",   en: "Trouble" },
+  { to: "/my",      icon: Luggage,     ja: "旅ログ",   en: "Trip" },
+  { to: "/share",   icon: Users,       ja: "つながり", en: "Connect" },
+  { to: "/events",  icon: PartyPopper, ja: "イベント", en: "Events" },
+  { to: "/stats",   icon: BarChart3,   ja: "集計",     en: "Stats" },
 ] as const;
 
 export function AppLayout({ children }: { children?: ReactNode }) {
