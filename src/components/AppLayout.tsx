@@ -1,14 +1,15 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Smile, Luggage, Users, PartyPopper, BarChart3, Languages } from "lucide-react";
+import { Smile, Luggage, Users, PartyPopper, BarChart3, Languages, AlertCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
 
 const tabs = [
-  { to: "/",       icon: Smile,       ja: "気持ち",   en: "Mood" },
-  { to: "/my",     icon: Luggage,     ja: "旅ログ",   en: "Trip Log" },
-  { to: "/share",  icon: Users,       ja: "つながり", en: "Connect" },
-  { to: "/events", icon: PartyPopper, ja: "イベント", en: "Events" },
-  { to: "/stats",  icon: BarChart3,   ja: "集計",     en: "Stats" },
+  { to: "/",        icon: Smile,       ja: "気持ち",   en: "Mood" },
+  { to: "/trouble", icon: AlertCircle, ja: "困った",   en: "Trouble" },
+  { to: "/my",      icon: Luggage,     ja: "旅ログ",   en: "Trip" },
+  { to: "/share",   icon: Users,       ja: "つながり", en: "Connect" },
+  { to: "/events",  icon: PartyPopper, ja: "イベント", en: "Events" },
+  { to: "/stats",   icon: BarChart3,   ja: "集計",     en: "Stats" },
 ] as const;
 
 export function AppLayout({ children }: { children?: ReactNode }) {
@@ -45,18 +46,19 @@ export function AppLayout({ children }: { children?: ReactNode }) {
         </header>
         <main className="flex-1 pb-28 px-4 pt-5 mobile-main">{children ?? <Outlet />}</main>
         <nav className="mobile-bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-card border-t border-border shadow-[0_-2px_12px_rgba(0,0,0,0.06)] z-50">
-          <div className="grid grid-cols-5">
+          <div className="grid grid-cols-6">
             {tabs.map((t) => {
               const Icon = t.icon;
+              const isTrouble = t.to === "/trouble";
               return (
                 <Link
                   key={t.to}
                   to={t.to}
-                  className="flex flex-col items-center justify-center py-2.5 text-muted-foreground transition-colors select-none"
-                  activeProps={{ className: "flex flex-col items-center justify-center py-2.5 text-primary select-none" }}
+                  className={`flex flex-col items-center justify-center py-2.5 select-none transition-colors ${isTrouble ? "text-rose-500" : "text-muted-foreground"}`}
+                  activeProps={{ className: `flex flex-col items-center justify-center py-2.5 select-none ${isTrouble ? "text-rose-600" : "text-primary"}` }}
                   activeOptions={{ exact: true }}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-5 h-5 ${isTrouble ? "fill-rose-100" : ""}`} />
                   <span className="text-[10px] mt-1 font-medium leading-none">{lang === "ja" ? t.ja : t.en}</span>
                 </Link>
               );

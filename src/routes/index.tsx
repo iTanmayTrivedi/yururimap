@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { computeStreak } from "@/lib/streak";
 import { AnimatedScene } from "@/components/AnimatedScene";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { FaceIcon } from "@/components/FaceIcon";
-import { Loader2, Users, MapPin, Info, ChevronDown, Calendar, Flame, MessageCircleHeart, PartyPopper } from "lucide-react";
+import { Loader2, Users, MapPin, Info, ChevronDown, Calendar, Flame, MessageCircleHeart, PartyPopper, AlertCircle, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -157,6 +157,28 @@ function InputPage() {
         </button>
         <div className="h-6" />
       </div>
+
+      {/* Prominent Trouble / 困った entry — main action per council feedback */}
+      <Link
+        to="/trouble"
+        className="block rounded-2xl shadow-md active:scale-[0.98] transition-transform"
+        style={{ background: "linear-gradient(135deg,#EC4899,#F43F5E)" }}
+      >
+        <div className="flex items-center gap-3 px-4 py-4">
+          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex-1 min-w-0 text-white">
+            <div className="text-base font-extrabold leading-tight">
+              {t(lang, "困ったを入力する", "Report a Trouble")}
+            </div>
+            <div className="text-[11px] opacity-90 mt-0.5">
+              {t(lang, "地域の困りごとをアンケートで送る", "Share a local concern via a quick survey")}
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-white/90 shrink-0" />
+        </div>
+      </Link>
 
       {activeCode && (
         <div

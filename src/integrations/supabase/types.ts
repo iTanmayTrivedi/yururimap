@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_secret: {
+        Row: {
+          id: number
+          passphrase: string
+        }
+        Insert: {
+          id?: number
+          passphrase: string
+        }
+        Update: {
+          id?: number
+          passphrase?: string
+        }
+        Relationships: []
+      }
       event_sessions: {
         Row: {
           created_at: string
@@ -94,6 +109,186 @@ export type Database = {
           session_id?: string
         }
         Relationships: []
+      }
+      fixed_survey_answers: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          location_source: string | null
+          question_id: string
+          submission_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_source?: string | null
+          question_id: string
+          submission_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_source?: string | null
+          question_id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_survey_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_survey_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_survey_answers_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_survey_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_survey_categories: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          name_en: string
+          name_ja: string
+          order_index: number
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name_en: string
+          name_ja: string
+          order_index?: number
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name_en?: string
+          name_ja?: string
+          order_index?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      fixed_survey_questions: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          location_enabled: boolean
+          order_index: number
+          survey_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          location_enabled?: boolean
+          order_index?: number
+          survey_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          location_enabled?: boolean
+          order_index?: number
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_survey_questions_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_survey_submissions: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          survey_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          survey_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_survey_submissions_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_surveys: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_surveys_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_survey_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       group_comments: {
         Row: {
@@ -304,12 +499,32 @@ export type Database = {
         }
         Relationships: []
       }
+      super_admins: {
+        Row: {
+          created_at: string
+          label: string | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          label?: string | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          label?: string | null
+          session_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      claim_admin: { Args: { _passphrase: string }; Returns: boolean }
       current_session_id: { Args: never; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

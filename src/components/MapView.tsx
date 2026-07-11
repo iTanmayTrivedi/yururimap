@@ -62,9 +62,9 @@ export function MapView({
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const map = L.map(containerRef.current, { center, zoom });
+    const map = L.map(containerRef.current, { center, zoom, minZoom: 2, worldCopyJump: true });
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap", maxZoom: 19, subdomains: ["a", "b", "c"],
+      attribution: "© OpenStreetMap", maxZoom: 19, minZoom: 2, subdomains: ["a", "b", "c"], noWrap: false,
     }).addTo(map);
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
