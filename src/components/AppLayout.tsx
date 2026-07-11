@@ -46,9 +46,10 @@ export function AppLayout({ children }: { children?: ReactNode }) {
         </header>
         <main className="flex-1 pb-28 px-4 pt-5 mobile-main">{children ?? <Outlet />}</main>
         <nav className="mobile-bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-card border-t border-border shadow-[0_-2px_12px_rgba(0,0,0,0.06)] z-50">
-          <div className="grid grid-cols-5">
+          <div className="grid grid-cols-6">
             {tabs.map((t) => {
               const Icon = t.icon;
+              const isTrouble = t.to === "/trouble";
               return (
                 <Link
                   key={t.to}
