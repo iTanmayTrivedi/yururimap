@@ -158,6 +158,28 @@ function InputPage() {
         <div className="h-6" />
       </div>
 
+      {/* Prominent Trouble / 困った entry — main action per council feedback */}
+      <Link
+        to="/trouble"
+        className="block rounded-2xl shadow-md active:scale-[0.98] transition-transform"
+        style={{ background: "linear-gradient(135deg,#EC4899,#F43F5E)" }}
+      >
+        <div className="flex items-center gap-3 px-4 py-4">
+          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex-1 min-w-0 text-white">
+            <div className="text-base font-extrabold leading-tight">
+              {t(lang, "困ったを入力する", "Report a Trouble")}
+            </div>
+            <div className="text-[11px] opacity-90 mt-0.5">
+              {t(lang, "地域の困りごとをアンケートで送る", "Share a local concern via a quick survey")}
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-white/90 shrink-0" />
+        </div>
+      </Link>
+
       {activeCode && (
         <div
           className="rounded-2xl border px-3 py-2.5 flex items-center gap-2 text-xs"
