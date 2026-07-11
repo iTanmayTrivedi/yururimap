@@ -56,10 +56,10 @@ function TroubleSurvey() {
   const profile = useMemo(() => loadProfile(), []);
 
   function setAns(qid: string, patch: Partial<Answer>) {
-    setAnswers((a) => ({
-      ...a,
-      [qid]: { comment: "", lat: null, lng: null, location_source: null, ...(a[qid] ?? {}), ...patch },
-    }));
+    setAnswers((a) => {
+      const prev: Answer = a[qid] ?? { comment: "", lat: null, lng: null, location_source: null };
+      return { ...a, [qid]: { ...prev, ...patch } };
+    });
   }
 
   async function useCurrent(qid: string) {
