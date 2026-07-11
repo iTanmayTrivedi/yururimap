@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { computeStreak } from "@/lib/streak";
 import { AnimatedScene } from "@/components/AnimatedScene";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { FaceIcon } from "@/components/FaceIcon";
-import { Loader2, Users, MapPin, Info, ChevronDown, Calendar, Flame, MessageCircleHeart, PartyPopper } from "lucide-react";
+import { Loader2, Users, MapPin, Info, ChevronDown, Calendar, Flame, MessageCircleHeart, PartyPopper, AlertCircle, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
