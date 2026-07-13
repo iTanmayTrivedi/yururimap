@@ -9,7 +9,7 @@ import { getSessionId } from "@/lib/session";
 import { loadProfile } from "@/lib/profile";
 import { AlertCircle, ArrowLeft, Heart, Loader2, MapPin, Plus, X } from "lucide-react";
 
-export const Route = createFileRoute("/trouble/map")({
+export const Route = createFileRoute("/trouble_/map")({
   head: () => ({
     meta: [
       { title: "困ったマップ / Trouble map — YururiMap" },

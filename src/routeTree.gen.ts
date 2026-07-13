@@ -17,7 +17,7 @@ import { Route as MoreRouteImport } from './routes/more'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TroubleMapRouteImport } from './routes/trouble.map'
+import { Route as TroubleMapRouteImport } from './routes/trouble_.map'
 import { Route as LiveCodeRouteImport } from './routes/live.$code'
 
 const TroubleRoute = TroubleRouteImport.update({
@@ -61,9 +61,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const TroubleMapRoute = TroubleMapRouteImport.update({
-  id: '/map',
-  path: '/map',
-  getParentRoute: () => TroubleRoute,
+  id: '/trouble_/map',
+  path: '/trouble/map',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const LiveCodeRoute = LiveCodeRouteImport.update({
   id: '/live/$code',
@@ -79,7 +79,7 @@ export interface FileRoutesByFullPath {
   '/my': typeof MyRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
-  '/trouble': typeof TroubleRouteWithChildren
+  '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
   '/trouble/map': typeof TroubleMapRoute
 }
@@ -91,7 +91,7 @@ export interface FileRoutesByTo {
   '/my': typeof MyRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
-  '/trouble': typeof TroubleRouteWithChildren
+  '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
   '/trouble/map': typeof TroubleMapRoute
 }
@@ -104,9 +104,9 @@ export interface FileRoutesById {
   '/my': typeof MyRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
-  '/trouble': typeof TroubleRouteWithChildren
+  '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
-  '/trouble/map': typeof TroubleMapRoute
+  '/trouble_/map': typeof TroubleMapRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -144,7 +144,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/trouble'
     | '/live/$code'
-    | '/trouble/map'
+    | '/trouble_/map'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -155,8 +155,9 @@ export interface RootRouteChildren {
   MyRoute: typeof MyRoute
   ShareRoute: typeof ShareRoute
   StatsRoute: typeof StatsRoute
-  TroubleRoute: typeof TroubleRouteWithChildren
+  TroubleRoute: typeof TroubleRoute
   LiveCodeRoute: typeof LiveCodeRoute
+  TroubleMapRoute: typeof TroubleMapRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -217,12 +218,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/trouble/map': {
-      id: '/trouble/map'
-      path: '/map'
+    '/trouble_/map': {
+      id: '/trouble_/map'
+      path: '/trouble/map'
       fullPath: '/trouble/map'
       preLoaderRoute: typeof TroubleMapRouteImport
-      parentRoute: typeof TroubleRoute
+      parentRoute: typeof rootRouteImport
     }
     '/live/$code': {
       id: '/live/$code'
@@ -234,17 +235,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface TroubleRouteChildren {
-  TroubleMapRoute: typeof TroubleMapRoute
-}
-
-const TroubleRouteChildren: TroubleRouteChildren = {
-  TroubleMapRoute: TroubleMapRoute,
-}
-
-const TroubleRouteWithChildren =
-  TroubleRoute._addFileChildren(TroubleRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EventsRoute: EventsRoute,
@@ -253,8 +243,9 @@ const rootRouteChildren: RootRouteChildren = {
   MyRoute: MyRoute,
   ShareRoute: ShareRoute,
   StatsRoute: StatsRoute,
-  TroubleRoute: TroubleRouteWithChildren,
+  TroubleRoute: TroubleRoute,
   LiveCodeRoute: LiveCodeRoute,
+  TroubleMapRoute: TroubleMapRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
