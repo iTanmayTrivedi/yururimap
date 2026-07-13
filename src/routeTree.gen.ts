@@ -16,9 +16,7 @@ import { Route as MyRouteImport } from './routes/my'
 import { Route as MoreRouteImport } from './routes/more'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as EventsRouteImport } from './routes/events'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TroubleSlugRouteImport } from './routes/trouble.$slug'
 import { Route as LiveCodeRouteImport } from './routes/live.$code'
 
 const TroubleRoute = TroubleRouteImport.update({
@@ -56,20 +54,10 @@ const EventsRoute = EventsRouteImport.update({
   path: '/events',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const TroubleSlugRoute = TroubleSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => TroubleRoute,
 } as any)
 const LiveCodeRoute = LiveCodeRouteImport.update({
   id: '/live/$code',
@@ -79,49 +67,42 @@ const LiveCodeRoute = LiveCodeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/events': typeof EventsRoute
   '/map': typeof MapRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
-  '/trouble': typeof TroubleRouteWithChildren
+  '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
-  '/trouble/$slug': typeof TroubleSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/events': typeof EventsRoute
   '/map': typeof MapRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
-  '/trouble': typeof TroubleRouteWithChildren
+  '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
-  '/trouble/$slug': typeof TroubleSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/events': typeof EventsRoute
   '/map': typeof MapRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
-  '/trouble': typeof TroubleRouteWithChildren
+  '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
-  '/trouble/$slug': typeof TroubleSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/events'
     | '/map'
     | '/more'
@@ -130,11 +111,9 @@ export interface FileRouteTypes {
     | '/stats'
     | '/trouble'
     | '/live/$code'
-    | '/trouble/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/events'
     | '/map'
     | '/more'
@@ -143,11 +122,9 @@ export interface FileRouteTypes {
     | '/stats'
     | '/trouble'
     | '/live/$code'
-    | '/trouble/$slug'
   id:
     | '__root__'
     | '/'
-    | '/admin'
     | '/events'
     | '/map'
     | '/more'
@@ -156,19 +133,17 @@ export interface FileRouteTypes {
     | '/stats'
     | '/trouble'
     | '/live/$code'
-    | '/trouble/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
   EventsRoute: typeof EventsRoute
   MapRoute: typeof MapRoute
   MoreRoute: typeof MoreRoute
   MyRoute: typeof MyRoute
   ShareRoute: typeof ShareRoute
   StatsRoute: typeof StatsRoute
-  TroubleRoute: typeof TroubleRouteWithChildren
+  TroubleRoute: typeof TroubleRoute
   LiveCodeRoute: typeof LiveCodeRoute
 }
 
@@ -223,26 +198,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/trouble/$slug': {
-      id: '/trouble/$slug'
-      path: '/$slug'
-      fullPath: '/trouble/$slug'
-      preLoaderRoute: typeof TroubleSlugRouteImport
-      parentRoute: typeof TroubleRoute
     }
     '/live/$code': {
       id: '/live/$code'
@@ -254,27 +215,15 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface TroubleRouteChildren {
-  TroubleSlugRoute: typeof TroubleSlugRoute
-}
-
-const TroubleRouteChildren: TroubleRouteChildren = {
-  TroubleSlugRoute: TroubleSlugRoute,
-}
-
-const TroubleRouteWithChildren =
-  TroubleRoute._addFileChildren(TroubleRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
   EventsRoute: EventsRoute,
   MapRoute: MapRoute,
   MoreRoute: MoreRoute,
   MyRoute: MyRoute,
   ShareRoute: ShareRoute,
   StatsRoute: StatsRoute,
-  TroubleRoute: TroubleRouteWithChildren,
+  TroubleRoute: TroubleRoute,
   LiveCodeRoute: LiveCodeRoute,
 }
 export const routeTree = rootRouteImport
