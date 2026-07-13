@@ -517,6 +517,68 @@ export type Database = {
         }
         Relationships: []
       }
+      trouble_metoo: {
+        Row: {
+          created_at: string
+          id: string
+          report_id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_id: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trouble_metoo_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "trouble_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trouble_reports: {
+        Row: {
+          affected_group: string | null
+          created_at: string
+          description: string
+          id: string
+          lat: number
+          lng: number
+          place_label: string
+          session_id: string
+        }
+        Insert: {
+          affected_group?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          lat: number
+          lng: number
+          place_label: string
+          session_id: string
+        }
+        Update: {
+          affected_group?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          lat?: number
+          lng?: number
+          place_label?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
