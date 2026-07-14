@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLang, t } from "@/lib/i18n";
 import { getSessionId } from "@/lib/session";
 import { loadProfile } from "@/lib/profile";
-import { AlertCircle, ArrowLeft, Check, Home as HomeIcon, Loader2, Map as MapIcon, MapPin, Send } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Home as HomeIcon, Loader2, Map as MapIcon, MapPin, Search, Send } from "lucide-react";
 
 export const Route = createFileRoute("/trouble")({
   head: () => ({
