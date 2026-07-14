@@ -263,5 +263,37 @@ function PickerMap({ lat, lng, onPick }: { lat: number | null; lng: number | nul
     m.setView([lat, lng], Math.max(m.getZoom(), 13), { animate: true });
   }, [lat, lng]);
 
-  return <div ref={ref} style={{ height: 220, width: "100%" }} />;
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <div className="flex items-center gap-2 rounded-xl border border-input bg-card px-3 py-2">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => results.length && setOpen(true)}
+            placeholder={t(lang, "地名・駅名で検索", "Search place or station")}
+            className="w-full bg-transparent text-sm outline-none"
+          />
+          {searching && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+        </div>
+        {open && results.length > 0 && (
+          <ul className="absolute z-[1000] left-0 right-0 mt-1 max-h-56 overflow-auto rounded-xl border border-border bg-card shadow-lg">
+            {results.map((r, i) => (
+              <li key={`${r.lat},${r.lon},${i}`}>
+                <button
+                  type="button"
+                  onClick={() => choose(r)}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-muted"
+                >
+                  {r.display_name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div ref={ref} style={{ height: 220, width: "100%" }} />
+    </div>
+  );
 }
