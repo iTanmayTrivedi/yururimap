@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLang, t } from "@/lib/i18n";
 import { getSessionId } from "@/lib/session";
 import { loadProfile } from "@/lib/profile";
-import { AlertCircle, ArrowLeft, Check, Home as HomeIcon, Loader2, Map as MapIcon, MapPin, Send } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Home as HomeIcon, Loader2, Map as MapIcon, MapPin, Search, Send } from "lucide-react";
 
 export const Route = createFileRoute("/trouble")({
   head: () => ({
@@ -186,12 +186,49 @@ function LocBtn({ active, onClick, icon, label }: { active: boolean; onClick: ()
   );
 }
 
+type SearchHit = { display_name: string; lat: string; lon: string };
+
 function PickerMap({ lat, lng, onPick }: { lat: number | null; lng: number | null; onPick: (lat: number, lng: number) => void }) {
+  const { lang } = useLang();
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.CircleMarker | null>(null);
   const onPickRef = useRef(onPick);
   useEffect(() => { onPickRef.current = onPick; }, [onPick]);
+
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchHit[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setResults([]); return; }
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&accept-language=${lang}&q=${encodeURIComponent(q)}`;
+        const res = await fetch(url, { signal: ctrl.signal, headers: { "Accept": "application/json" } });
+        if (!res.ok) throw new Error("search failed");
+        const data = (await res.json()) as SearchHit[];
+        setResults(data);
+        setOpen(true);
+      } catch (e) {
+        if ((e as Error).name !== "AbortError") setResults([]);
+      } finally { setSearching(false); }
+    }, 400);
+    return () => { ctrl.abort(); clearTimeout(timer); };
+  }, [query, lang]);
+
+  function choose(h: SearchHit) {
+    const la = parseFloat(h.lat); const ln = parseFloat(h.lon);
+    if (Number.isFinite(la) && Number.isFinite(ln)) {
+      onPickRef.current(la, ln);
+      setQuery(h.display_name);
+      setOpen(false);
+    }
+  }
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
@@ -226,5 +263,37 @@ function PickerMap({ lat, lng, onPick }: { lat: number | null; lng: number | nul
     m.setView([lat, lng], Math.max(m.getZoom(), 13), { animate: true });
   }, [lat, lng]);
 
-  return <div ref={ref} style={{ height: 220, width: "100%" }} />;
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <div className="flex items-center gap-2 rounded-xl border border-input bg-card px-3 py-2">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => results.length && setOpen(true)}
+            placeholder={t(lang, "地名・駅名で検索", "Search place or station")}
+            className="w-full bg-transparent text-sm outline-none"
+          />
+          {searching && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+        </div>
+        {open && results.length > 0 && (
+          <ul className="absolute z-[1000] left-0 right-0 mt-1 max-h-56 overflow-auto rounded-xl border border-border bg-card shadow-lg">
+            {results.map((r, i) => (
+              <li key={`${r.lat},${r.lon},${i}`}>
+                <button
+                  type="button"
+                  onClick={() => choose(r)}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-muted"
+                >
+                  {r.display_name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div ref={ref} style={{ height: 220, width: "100%" }} />
+    </div>
+  );
 }
