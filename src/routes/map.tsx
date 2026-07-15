@@ -1,154 +1,272 @@
-import { createFileRoute, ClientOnly } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { createFileRoute, Link, ClientOnly } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import L from "leaflet";
 import { supabase } from "@/integrations/supabase/client";
-import { MOODS, filterByRange, type TimeRange } from "@/lib/session";
-import { MapView } from "@/components/MapView";
-import { Loader2 } from "lucide-react";
+import { useLang, t } from "@/lib/i18n";
+import { getSessionId } from "@/lib/session";
+import { POST_TYPES, POST_TYPE_LIST, type PostRow, type PostType } from "@/lib/posts";
+import { Heart, Loader2, MapPin, X, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
     meta: [
-      { title: "みんなのマップ / Public Map" },
-      { name: "description", content: "See everyone's moods on the map." },
+      { title: "みんなの投稿マップ / Public Map — YururiMap" },
+      { name: "description", content: "Everyone's Happy posts, Requests, and Promoted activities on one map." },
     ],
   }),
   component: MapPage,
 });
 
-const RANGES: { v: TimeRange; ja: string; en: string }[] = [
-  { v: "all",   ja: "全期間", en: "All" },
-  { v: "today", ja: "今日",   en: "Today" },
-  { v: "week",  ja: "今週",   en: "Week" },
-];
+type FilterKey = "all" | PostType;
 
 function MapPage() {
-  const [range, setRange] = useState<TimeRange>("all");
-  const [filter, setFilter] = useState<string | null>(null);
+  const { lang } = useLang();
+  const qc = useQueryClient();
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["public-submissions"],
+  const postsQ = useQuery({
+    queryKey: ["public-posts"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("submissions")
-        .select("mood, mood_en, mood_color, rounded_lat, rounded_lng, timestamp")
-        .order("timestamp", { ascending: false })
-        .limit(1000);
+      const { data, error } = await supabase.from("posts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(2000);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as PostRow[];
     },
     refetchInterval: 30000,
   });
 
-  const ranged = filterByRange(data ?? [], range);
-  const filtered = ranged.filter((d) => !filter || d.mood === filter);
-  const points = filtered
-    .map((d) => {
-      if (d.rounded_lat === null || d.rounded_lng === null) return null;
-      return {
-        lat: d.rounded_lat as number,
-        lng: d.rounded_lng as number,
-        color: d.mood_color,
-        emoji: MOODS.find((m) => m.ja === d.mood)?.emoji,
-        label: d.mood,
-      };
-    })
-    .filter((p): p is NonNullable<typeof p> => p !== null);
+  const likesQ = useQuery({
+    queryKey: ["post-likes-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("post_likes").select("post_id");
+      if (error) throw error;
+      const m = new Map<string, number>();
+      for (const r of data ?? []) {
+        const id = (r as { post_id: string }).post_id;
+        m.set(id, (m.get(id) ?? 0) + 1);
+      }
+      return m;
+    },
+    refetchInterval: 30000,
+  });
 
-  const noLocCount = filtered.filter((d) => d.rounded_lat === null && d.rounded_lng === null).length;
-  const counts = MOODS.map((m) => ({ ...m, count: ranged.filter((d) => d.mood === m.ja).length }));
+  const posts = (postsQ.data ?? []).filter((p) => p.lat != null && p.lng != null);
+  const visible = filter === "all" ? posts : posts.filter((p) => p.type === filter);
+  const selected = useMemo(() => posts.find((p) => p.id === selectedId) ?? null, [selectedId, posts]);
+  const counts = {
+    happy: posts.filter((p) => p.type === "happy").length,
+    request: posts.filter((p) => p.type === "request").length,
+    promote: posts.filter((p) => p.type === "promote").length,
+  };
+
+  async function like(postId: string) {
+    try {
+      const sid = getSessionId();
+      const { error } = await supabase.from("post_likes").insert({ post_id: postId, session_id: sid });
+      if (error) {
+        if (error.code === "23505") { toast.info(t(lang, "すでに反応しました", "You already reacted")); return; }
+        throw error;
+      }
+      toast.success(t(lang, "ありがとう！", "Thanks!"));
+      qc.invalidateQueries({ queryKey: ["post-likes-counts"] });
+    } catch (e) { toast.error((e as Error).message); }
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <h2 className="text-xl font-bold">みんなのマップ</h2>
-        <p className="text-sm text-muted-foreground">Public Map</p>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">{t(lang, "みんなの投稿マップ", "Public Map")}</h2>
+        <div className="text-[10px] text-muted-foreground">{t(lang, "ピンをタップして内容を確認", "Tap a pin for details")}</div>
       </div>
 
-      <RangeTabs value={range} onChange={setRange} />
-
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="表示中 / Shown" value={points.length} />
-        <Stat label="合計 / Total"   value={ranged.length} />
-        <Stat label="位置なし / No loc" value={noLocCount} />
-      </div>
-
-      <div className="text-xs text-center rounded-xl py-2 px-3 bg-muted/60 border border-border">
-        🔒 位置情報は500mグリッドで表示 / Locations shown on 500m grid
-      </div>
-
+      {/* Filter chips */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-        <FilterChip active={filter === null} onClick={() => setFilter(null)} label="すべて" sub="All" />
-        {MOODS.map((m) => (
-          <FilterChip key={m.ja} active={filter === m.ja} onClick={() => setFilter(m.ja)}
-            label={`${m.emoji} ${m.ja}`} color={m.color} />
+        <Chip active={filter === "all"} onClick={() => setFilter("all")} label={t(lang, "すべて", "All")} sub={String(posts.length)} color="#6B7280" />
+        {POST_TYPE_LIST.map((p) => (
+          <Chip key={p.type}
+            active={filter === p.type}
+            onClick={() => setFilter(p.type)}
+            label={`${p.emoji} ${lang === "ja" ? p.ja : p.en}`}
+            sub={String(counts[p.type])}
+            color={p.color} />
         ))}
       </div>
 
       <div className="rounded-2xl overflow-hidden border border-border shadow-md bg-card">
-        {isLoading ? (
-          <div className="h-[360px] flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-        ) : error ? (
-          <div className="h-[360px] flex items-center justify-center text-sm text-destructive p-4 text-center">{(error as Error).message}</div>
+        {postsQ.isLoading ? (
+          <div className="h-[380px] flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin" /></div>
         ) : (
-          <ClientOnly fallback={<div className="h-[360px]" />}>
-            <MapView points={points} height="360px" center={[36.5, 138.0]} zoom={5} fitToPoints={false} jitterDuplicates />
+          <ClientOnly fallback={<div className="h-[380px]" />}>
+            <PostMap posts={visible} counts={likesQ.data ?? new Map()} onSelect={setSelectedId} />
           </ClientOnly>
         )}
       </div>
 
-      <div className="bg-card rounded-2xl p-4 border border-border shadow-sm space-y-2">
-        <h2 className="text-base font-semibold mb-2">気持ちの内訳 / Breakdown</h2>
-        {counts.map((c) => (
-          <div key={c.ja} className="flex items-center gap-3">
-            <span className="text-2xl">{c.emoji}</span>
-            <span className="flex-1 text-base">
-              <span className="font-medium">{c.ja}</span>
-              <span className="text-sm text-muted-foreground ml-1">{c.en}</span>
-            </span>
-            <span className="text-base font-bold tabular-nums" style={{ color: c.color }}>{c.count}</span>
-          </div>
+      {selected && (
+        <PostCard
+          post={selected}
+          likeCount={likesQ.data?.get(selected.id) ?? 0}
+          onLike={() => like(selected.id)}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
+
+      {/* Legend */}
+      <div className="grid grid-cols-3 gap-2">
+        {POST_TYPE_LIST.map((p) => (
+          <Link key={p.type} to={`/post/${p.type}` as "/post/happy"}
+            className="rounded-xl border p-2 text-center text-[11px] font-semibold shadow-sm"
+            style={{ backgroundColor: p.soft, borderColor: `${p.color}55`, color: p.color }}>
+            {p.emoji} {lang === "ja" ? p.ja : p.en}
+            <div className="text-[9px] font-normal opacity-80">{t(lang, "投稿する", "Post")}</div>
+          </Link>
         ))}
       </div>
     </div>
   );
 }
 
-export function RangeTabs({ value, onChange }: { value: TimeRange; onChange: (v: TimeRange) => void }) {
+function Chip({ active, onClick, label, sub, color }:
+  { active: boolean; onClick: () => void; label: string; sub?: string; color: string }) {
   return (
-    <div className="grid grid-cols-3 bg-muted/60 rounded-xl p-1 border border-border">
-      {RANGES.map((r) => {
-        const active = r.v === value;
-        return (
-          <button key={r.v} onClick={() => onChange(r.v)}
-            className="py-2 rounded-lg text-sm font-medium transition"
-            style={{ backgroundColor: active ? "var(--card)" : "transparent",
-                     color: active ? "#EC4899" : "var(--muted-foreground)",
-                     boxShadow: active ? "0 1px 2px rgba(0,0,0,0.06)" : undefined }}>
-            {r.ja}<span className="text-[10px] ml-1 opacity-70">{r.en}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="bg-card rounded-xl p-3 border border-border shadow-sm">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="text-2xl font-bold tabular-nums">{value.toLocaleString()}</div>
-    </div>
-  );
-}
-
-function FilterChip({ active, onClick, label, sub, color }: { active: boolean; onClick: () => void; label: string; sub?: string; color?: string }) {
-  return (
-    <button onClick={onClick} className="shrink-0 px-3 py-2 rounded-full border text-sm font-medium transition-colors"
+    <button onClick={onClick}
+      className="shrink-0 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors inline-flex items-center gap-1.5"
       style={active
-        ? { backgroundColor: color ?? "var(--primary)", color: "#fff", borderColor: color ?? "var(--primary)" }
+        ? { backgroundColor: color, color: "#fff", borderColor: color }
         : { backgroundColor: "var(--card)", color: "var(--foreground)", borderColor: "var(--border)" }}>
-      {label}{sub && <span className="ml-1 opacity-70 text-xs">{sub}</span>}
+      {label}
+      {sub != null && <span className="text-[10px] opacity-80">{sub}</span>}
     </button>
+  );
+}
+
+function PostMap({ posts, counts, onSelect }:
+  { posts: PostRow[]; counts: Map<string, number>; onSelect: (id: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const layerRef = useRef<L.LayerGroup | null>(null);
+  const onSelectRef = useRef(onSelect);
+  useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
+
+  useEffect(() => {
+    if (!ref.current || mapRef.current) return;
+    // Default view: Japan; can zoom out to world.
+    const m = L.map(ref.current, {
+      center: [36.5, 138.0], zoom: 5, minZoom: 2, maxZoom: 19, worldCopyJump: true,
+    });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap", maxZoom: 19, minZoom: 2, subdomains: ["a","b","c"], noWrap: false,
+    }).addTo(m);
+    layerRef.current = L.layerGroup().addTo(m);
+    mapRef.current = m;
+    setTimeout(() => m.invalidateSize(), 80);
+    return () => { m.remove(); mapRef.current = null; };
+  }, []);
+
+  useEffect(() => {
+    const m = mapRef.current; const layer = layerRef.current;
+    if (!m || !layer) return;
+    layer.clearLayers();
+    posts.forEach((p) => {
+      const meta = POST_TYPES[p.type];
+      const showCount = p.type === "request";
+      const count = (counts.get(p.id) ?? 0) + (showCount ? 1 : 0);
+      const size = showCount ? Math.min(46, 26 + Math.log2(Math.max(1, count)) * 6) : 30;
+      const label = showCount ? String(count) : meta.emoji;
+      const fontSize = showCount ? Math.max(11, size * 0.42) : 16;
+      const html = `
+        <div style="position:relative;width:${size}px;height:${size + 8}px;">
+          <div style="position:absolute;top:0;left:50%;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${meta.color};transform:translateX(-50%) rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.25);">
+            <span style="transform:rotate(45deg);color:#fff;font-weight:800;font-size:${fontSize}px;font-family:inherit;line-height:1;">${label}</span>
+          </div>
+        </div>`;
+      const icon = L.divIcon({ className: "post-pin", html, iconSize: [size, size + 8], iconAnchor: [size / 2, size + 8] });
+      const marker = L.marker([p.lat!, p.lng!], { icon });
+      marker.on("click", () => onSelectRef.current(p.id));
+      marker.addTo(layer);
+    });
+  }, [posts, counts]);
+
+  return <div ref={ref} style={{ height: 380, width: "100%" }} />;
+}
+
+function PostCard({ post, likeCount, onLike, onClose }:
+  { post: PostRow; likeCount: number; onLike: () => void; onClose: () => void }) {
+  const { lang } = useLang();
+  const meta = POST_TYPES[post.type];
+  return (
+    <div className="rounded-2xl border bg-card p-4 shadow-md space-y-3"
+      style={{ borderColor: `${meta.color}66` }}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-8 h-8 rounded-full flex items-center justify-center text-lg shrink-0"
+            style={{ backgroundColor: meta.soft, border: `2px solid ${meta.color}` }}>
+            {meta.emoji}
+          </span>
+          <div className="min-w-0">
+            <div className="text-[11px] font-bold" style={{ color: meta.color }}>
+              {lang === "ja" ? meta.ja : meta.en}
+            </div>
+            <div className="text-sm font-bold truncate">{post.title ?? post.place_label ?? (lang === "ja" ? "投稿" : "Post")}</div>
+          </div>
+        </div>
+        <button onClick={onClose} className="text-muted-foreground p-1"><X className="w-4 h-4" /></button>
+      </div>
+
+      {post.photo_url && (
+        <img src={post.photo_url} alt="" className="w-full h-40 object-cover rounded-xl border border-border" />
+      )}
+
+      {post.place_label && (
+        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <MapPin className="w-3.5 h-3.5" /> {post.place_label}
+        </div>
+      )}
+
+      <div>
+        <div className="text-[10px] font-semibold mb-1" style={{ color: meta.color }}>
+          {post.type === "request" ? t(lang, "リクエスト内容", "Request")
+            : post.type === "promote" ? t(lang, "活動内容", "Activity")
+            : t(lang, "内容", "Content")}
+        </div>
+        <p className="rounded-xl px-3 py-2 text-sm whitespace-pre-wrap" style={{ backgroundColor: meta.soft }}>
+          {post.description}
+        </p>
+      </div>
+
+      {post.why_needed && (
+        <div>
+          <div className="text-[10px] font-semibold mb-1" style={{ color: meta.color }}>
+            {t(lang, "なぜリクエスト？", "Why?")}
+          </div>
+          <p className="rounded-xl px-3 py-2 text-sm whitespace-pre-wrap" style={{ backgroundColor: meta.soft }}>
+            {post.why_needed}
+          </p>
+        </div>
+      )}
+
+      {post.when_text && (
+        <div className="text-xs"><span className="font-semibold">{t(lang, "いつ", "When")}: </span>{post.when_text}</div>
+      )}
+      {post.official_url && (
+        <a href={post.official_url} target="_blank" rel="noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-emerald-700 underline">
+          <ExternalLink className="w-3 h-3" /> {post.official_url}
+        </a>
+      )}
+
+      <button onClick={onLike}
+        className="w-full min-h-[48px] rounded-2xl text-white font-bold shadow-sm inline-flex items-center justify-center gap-2"
+        style={{ backgroundColor: meta.color }}>
+        <Heart className="w-4 h-4" />
+        {lang === "ja" ? meta.actionJa : meta.actionEn}
+        <span className="ml-1 text-sm font-extrabold">{likeCount}{lang === "ja" ? "人" : ""}</span>
+      </button>
+    </div>
   );
 }
