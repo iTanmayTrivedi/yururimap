@@ -457,6 +457,89 @@ export type Database = {
         }
         Relationships: []
       }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          affected_group: string | null
+          created_at: string
+          description: string
+          id: string
+          lat: number | null
+          lng: number | null
+          official_url: string | null
+          photo_url: string | null
+          place_label: string | null
+          session_id: string
+          title: string | null
+          type: Database["public"]["Enums"]["post_type"]
+          updated_at: string
+          when_text: string | null
+          why_needed: string | null
+        }
+        Insert: {
+          affected_group?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          official_url?: string | null
+          photo_url?: string | null
+          place_label?: string | null
+          session_id: string
+          title?: string | null
+          type: Database["public"]["Enums"]["post_type"]
+          updated_at?: string
+          when_text?: string | null
+          why_needed?: string | null
+        }
+        Update: {
+          affected_group?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          official_url?: string | null
+          photo_url?: string | null
+          place_label?: string | null
+          session_id?: string
+          title?: string | null
+          type?: Database["public"]["Enums"]["post_type"]
+          updated_at?: string
+          when_text?: string | null
+          why_needed?: string | null
+        }
+        Relationships: []
+      }
       submissions: {
         Row: {
           exact_lat: number | null
@@ -589,7 +672,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      post_type: "happy" | "request" | "promote"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -716,6 +799,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      post_type: ["happy", "request", "promote"],
+    },
   },
 } as const
