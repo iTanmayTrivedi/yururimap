@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MOODS, filterByRange, type TimeRange } from "@/lib/session";
-import { RangeTabs } from "./map";
+import { RangeTabs } from "@/components/RangeTabs";
 import { useLang, t } from "@/lib/i18n";
 import { Loader2, Users, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";

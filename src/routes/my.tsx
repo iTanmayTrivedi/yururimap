@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId, MOODS, filterByRange, type TimeRange } from "@/lib/session";
 import { MapView, type MapPoint } from "@/components/MapView";
-import { RangeTabs } from "./map";
+import { RangeTabs } from "@/components/RangeTabs";
 import { useLang, t } from "@/lib/i18n";
 import { FaceIcon } from "@/components/FaceIcon";
 import { Loader2, Trash2, Luggage } from "lucide-react";
