@@ -9,81 +9,29 @@ import { computeStreak } from "@/lib/streak";
 import { AnimatedScene } from "@/components/AnimatedScene";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { FaceIcon } from "@/components/FaceIcon";
-import { Loader2, Users, MapPin, Info, ChevronDown, Calendar, Flame, MessageCircleHeart, PartyPopper, AlertCircle, ChevronRight } from "lucide-react";
+import { POST_TYPE_LIST } from "@/lib/posts";
+import { Loader2, MapPin, Calendar, Flame, MessageCircleHeart, User, Megaphone as MegaphoneIcon, ChevronRight, Bell } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "YururiMap — 今の気持ちは？ / How are you feeling?" },
-      { name: "description", content: "Tap a mood to record how you feel." },
+      { name: "description", content: "Post Happy, Request, or Promote-Activity to your neighborhood map." },
     ],
   }),
-  component: InputPage,
+  component: HomePage,
 });
 
-type LocResult = { lat: number; lng: number; accuracy: number } | null;
-
-function getPosition(): Promise<LocResult> {
-  return new Promise((resolve) => {
-    if (!("geolocation" in navigator)) return resolve(null);
-    navigator.geolocation.getCurrentPosition(
-      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
-    );
-  });
-}
-
-const LOC_PREF_KEY = "niko_loc_on";
-
-function InputPage() {
+function HomePage() {
   const { lang } = useLang();
   const qc = useQueryClient();
-  const [locOn, setLocOn] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [permState, setPermState] = useState<"granted" | "denied" | "prompt" | "unknown">("unknown");
-  const [showHelp, setShowHelp] = useState(false);
-  const [activeCode, setActiveCode] = useState("");
-  const [sessionTick, setSessionTick] = useState(0); // triggers scene visitor
+  const [sessionTick, setSessionTick] = useState(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [sid, setSid] = useState("");
 
-  useEffect(() => {
-    setSid(getSessionId());
-    const saved = localStorage.getItem(LOC_PREF_KEY);
-    if (saved === "off") setLocOn(false);
-    else if (saved === "on") setLocOn(true);
-    setActiveCode(localStorage.getItem("niko_active_code") ?? "");
-    const onStorage = () => setActiveCode(localStorage.getItem("niko_active_code") ?? "");
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-  useEffect(() => { localStorage.setItem(LOC_PREF_KEY, locOn ? "on" : "off"); }, [locOn]);
+  useEffect(() => { setSid(getSessionId()); }, []);
 
-  useEffect(() => {
-    const nav = navigator as Navigator & { permissions?: { query: (d: { name: PermissionName }) => Promise<PermissionStatus> } };
-    if (!nav.permissions?.query) return;
-    let status: PermissionStatus | null = null;
-    nav.permissions.query({ name: "geolocation" as PermissionName }).then((s) => {
-      status = s;
-      setPermState(s.state as typeof permState);
-      s.onchange = () => setPermState(s.state as typeof permState);
-    }).catch(() => {});
-    return () => { if (status) status.onchange = null; };
-  }, []);
-
-  // Look up whether active code is an event → skip GPS in event mode.
-  const activeGroupQ = useQuery({
-    enabled: !!activeCode,
-    queryKey: ["active-group", activeCode],
-    queryFn: async () => {
-      const { data } = await supabase.from("groups").select("is_event,name").eq("shared_code", activeCode).maybeSingle();
-      return data;
-    },
-  });
-  const inEvent = activeGroupQ.data?.is_event === true;
-
-  // Today count + streak
   const myQ = useQuery({
     enabled: !!sid,
     queryKey: ["my-submissions-lite", sid],
@@ -97,156 +45,103 @@ function InputPage() {
 
   async function submit(m: Mood) {
     setBusy(m.ja);
+    // Read location preference from My Page (falls back to on)
     let exact_lat: number | null = null;
     let exact_lng: number | null = null;
-
-    if (locOn && !inEvent) {
-      const pos = await getPosition();
-      if (pos) {
-        exact_lat = pos.lat;
-        exact_lng = pos.lng;
-      }
+    const locOn = (typeof window !== "undefined" && localStorage.getItem("niko_loc_on") !== "off");
+    if (locOn && "geolocation" in navigator) {
+      await new Promise<void>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (p) => { exact_lat = p.coords.latitude; exact_lng = p.coords.longitude; resolve(); },
+          () => resolve(),
+          { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 },
+        );
+      });
     }
-
     try {
-      const code = (typeof window !== "undefined" && localStorage.getItem("niko_active_code")) || null;
       const { data, error } = await supabase.from("submissions").insert({
-        mood: m.ja,
-        mood_en: m.en,
-        mood_color: m.color,
-        rounded_lat: null,
-        rounded_lng: null,
-        exact_lat, exact_lng,
-        shared_code: code,
-        session_id: getSessionId(),
+        mood: m.ja, mood_en: m.en, mood_color: m.color,
+        rounded_lat: null, rounded_lng: null, exact_lat, exact_lng,
+        shared_code: null, session_id: getSessionId(),
       }).select("id").single();
       if (error) throw error;
       if (data?.id && exact_lat != null && exact_lng != null) {
         localStorage.setItem("niko_last_sub", JSON.stringify({ id: data.id, lat: exact_lat, lng: exact_lng }));
-      } else {
-        localStorage.removeItem("niko_last_sub");
       }
-      // Stay on this screen — animate visitor, update stats.
       setSessionTick((n) => n + 1);
       qc.invalidateQueries({ queryKey: ["my-submissions-lite", sid] });
-      qc.invalidateQueries({ queryKey: ["my-submissions", sid] });
       qc.invalidateQueries({ queryKey: ["public-submissions"] });
-      toast.success(t(lang, "記録しました！", "Recorded!"), {
-        description: lang === "ja" ? m.ja : m.en,
-        duration: 1600,
-      });
+      toast.success(t(lang, "記録しました！", "Recorded!"), { description: lang === "ja" ? m.ja : m.en, duration: 1600 });
     } catch (e) {
       toast.error(t(lang, "エラー", "Error"), { description: (e as Error).message });
-    } finally {
-      setBusy(null);
-    }
+    } finally { setBusy(null); }
   }
-
-  const gpsHidden = inEvent;
 
   return (
     <div className="space-y-4">
-      {/* Top-left feedback button (floats over the content area) */}
+      {/* Feedback */}
       <div className="flex items-start justify-between -mt-1">
-        <button
-          onClick={() => setFeedbackOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-[11px] font-semibold text-pink-700 shadow-sm active:scale-[0.97]"
-        >
-          <MessageCircleHeart className="w-3.5 h-3.5" />
-          {t(lang, "ご意見・ご感想", "Feedback")}
+        <button onClick={() => setFeedbackOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-[11px] font-semibold text-pink-700 shadow-sm active:scale-[0.97]">
+          <MessageCircleHeart className="w-3.5 h-3.5" /> {t(lang, "ご意見・ご感想", "Feedback")}
         </button>
-        <div className="h-6" />
+        <Link to="/announcements"
+          className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-800 shadow-sm">
+          <Bell className="w-3.5 h-3.5" /> {t(lang, "お知らせ", "Announcements")}
+        </Link>
       </div>
 
-      {/* Prominent Trouble / 困った entry — main action per council feedback */}
-      <Link
-        to="/trouble"
-        className="block rounded-2xl shadow-md active:scale-[0.98] transition-transform"
-        style={{ background: "linear-gradient(135deg,#EC4899,#F43F5E)" }}
-      >
-        <div className="flex items-center gap-3 px-4 py-4">
-          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-            <AlertCircle className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0 text-white">
-            <div className="text-base font-extrabold leading-tight">
-              {t(lang, "困ったを入力する", "Report a Trouble")}
-            </div>
-            <div className="text-[11px] opacity-90 mt-0.5">
-              {t(lang, "地域の困りごとをアンケートで送る", "Share a local concern via a quick survey")}
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-white/90 shrink-0" />
-        </div>
-      </Link>
+      {/* Three main post-type tiles */}
+      <div className="grid grid-cols-3 gap-2">
+        {POST_TYPE_LIST.map((p) => (
+          <Link key={p.type} to={`/post/${p.type}` as "/post/happy"}
+            className="rounded-2xl border p-3 flex flex-col items-center text-center shadow-sm active:scale-[0.97] transition"
+            style={{ backgroundColor: p.soft, borderColor: `${p.color}55` }}>
+            <span className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-sm mb-1"
+              style={{ backgroundColor: "#fff", border: `2px solid ${p.color}` }}>{p.emoji}</span>
+            <span className="text-[12px] font-extrabold leading-tight" style={{ color: p.color }}>
+              {lang === "ja" ? p.ja : p.en}
+            </span>
+          </Link>
+        ))}
+      </div>
 
-      {activeCode && (
-        <div
-          className="rounded-2xl border px-3 py-2.5 flex items-center gap-2 text-xs"
-          style={{
-            borderColor: inEvent ? "#FDE68A" : "#A7F3D0",
-            backgroundColor: inEvent ? "#FFFBEB" : "#ECFDF5",
-          }}
-        >
-          {inEvent ? <PartyPopper className="w-4 h-4 text-amber-600 shrink-0" /> : <Users className="w-4 h-4 text-emerald-700 shrink-0" />}
+      {/* Secondary tiles: My Page / Announcements */}
+      <div className="grid grid-cols-2 gap-2">
+        <Link to="/my"
+          className="rounded-2xl border border-border bg-card p-3 flex items-center gap-2 shadow-sm active:scale-[0.98]">
+          <span className="w-10 h-10 rounded-full bg-sky-100 border border-sky-200 flex items-center justify-center">
+            <User className="w-5 h-5 text-sky-700" />
+          </span>
           <div className="flex-1 min-w-0">
-            <div style={{ color: inEvent ? "#92400E" : "#065F46" }}>
-              {inEvent ? t(lang, "イベントで投稿中", "Posting in event") : t(lang, "共有コードで投稿中", "Posting as")}
-            </div>
-            <div className="font-mono font-bold truncate" style={{ color: inEvent ? "#78350F" : "#064E3B" }}>{activeCode}</div>
+            <div className="text-sm font-bold">{t(lang, "マイページ", "My Page")}</div>
+            <div className="text-[10px] text-muted-foreground">{t(lang, "位置情報・居住地域", "Location & home area")}</div>
           </div>
-          <button
-            onClick={() => { localStorage.removeItem("niko_active_code"); setActiveCode(""); }}
-            className="text-[11px] px-2 py-1 rounded-md bg-white border border-current/20 shrink-0"
-            style={{ color: inEvent ? "#92400E" : "#065F46" }}
-          >
-            {t(lang, "解除", "Unbind")}
-          </button>
-        </div>
-      )}
-
-      {/* Location line (compact) */}
-      {!gpsHidden ? (
-        <button
-          onClick={() => setLocOn((v) => !v)}
-          className="w-full flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 text-left"
-        >
-          <MapPin className="w-4 h-4 shrink-0" style={{ color: locOn ? "#059669" : "#9CA3AF" }} />
-          <span className="text-xs font-semibold">
-            {t(lang, "位置情報", "Location")}：
-            <span style={{ color: locOn ? "#059669" : "#6B7280" }}>{locOn ? "ON" : "OFF"}</span>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </Link>
+        <Link to="/announcements"
+          className="rounded-2xl border border-border bg-card p-3 flex items-center gap-2 shadow-sm active:scale-[0.98]">
+          <span className="w-10 h-10 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center">
+            <Bell className="w-5 h-5 text-amber-700" />
           </span>
-          <span className="text-[10px] text-muted-foreground ml-1">
-            {locOn ? t(lang, "（正確な位置）", "(exact)") : t(lang, "（保存しません）", "(not saved)")}
-          </span>
-        </button>
-      ) : (
-        <div className="rounded-2xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          🎉 {t(lang, "イベント中は位置情報を保存しません", "Location is off during events")}
-        </div>
-      )}
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold">{t(lang, "お知らせ", "Announcements")}</div>
+            <div className="text-[10px] text-muted-foreground">{t(lang, "運営からのお知らせ", "News from the team")}</div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </Link>
+      </div>
 
-      {/* Mood question */}
+      {/* Feelings — mood input */}
       <div>
         <h2 className="text-base font-bold mb-2 text-foreground">{t(lang, "今の気持ちは？", "How are you feeling?")}</h2>
-
-        {/* Horizontal 5-button row */}
         <div className="grid grid-cols-5 gap-1.5">
           {MOODS.map((m) => (
-            <button
-              key={m.ja}
-              onClick={() => submit(m)}
-              disabled={busy !== null}
+            <button key={m.ja} onClick={() => submit(m)} disabled={busy !== null}
               className="rounded-2xl border p-1.5 flex flex-col items-center min-h-[80px] transition-all active:scale-95 disabled:opacity-50"
-              style={{
-                backgroundColor: m.soft,
-                borderColor: `${m.color}55`,
-              }}
-            >
-              <span
-                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1 shadow-sm"
-                style={{ backgroundColor: "#fff", border: `2px solid ${m.color}` }}
-              >
+              style={{ backgroundColor: m.soft, borderColor: `${m.color}55` }}>
+              <span className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1 shadow-sm"
+                style={{ backgroundColor: "#fff", border: `2px solid ${m.color}` }}>
                 <FaceIcon color={m.color} kind={m.en} />
               </span>
               <span className="text-[10px] font-bold leading-tight text-center" style={{ color: m.color }}>
@@ -258,7 +153,7 @@ function InputPage() {
         </div>
       </div>
 
-      {/* Stats card: today's posts + streak */}
+      {/* Stats card */}
       <div className="rounded-2xl border border-border bg-card shadow-sm p-3 flex items-center gap-3">
         <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-100 to-sky-100 flex items-center justify-center shrink-0 border border-emerald-200">
           <MapPin className="w-7 h-7 text-pink-500" />
@@ -279,49 +174,13 @@ function InputPage() {
         </div>
       </div>
 
-      {/* River scene with drifting otters */}
       <AnimatedScene trigger={sessionTick} />
 
-      {/* Friendly hint */}
       <div className="rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-[11px] text-amber-800 text-center">
         💡 {t(lang, "気持ちボタンを押すと、ラッコとおともだちが遊びに来るよ♪", "Tap a mood and a little friend visits ✨")}
       </div>
-
-      {/* Location detail help (only when needed) */}
-      {!gpsHidden && permState === "denied" && locOn && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 text-amber-900 p-3 text-xs space-y-2">
-          <div className="flex items-start gap-2">
-            <Info className="w-4 h-4 mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <div className="font-semibold">
-                {t(lang, "ブラウザで位置情報がブロックされています", "Location is blocked by your browser")}
-              </div>
-              <div className="mt-1">
-                {t(lang, "OFFにすれば位置情報なしで投稿できます。", "Turn it OFF to post without location.")}
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setLocOn(false)} className="px-3 py-1.5 rounded-md bg-amber-900 text-white text-xs font-medium">
-              {t(lang, "OFFにする", "Turn OFF")}
-            </button>
-            <button onClick={() => setShowHelp((v) => !v)} className="px-3 py-1.5 rounded-md bg-white border border-amber-300 text-xs inline-flex items-center gap-1">
-              {t(lang, "解除方法", "How to enable")}
-              <ChevronDown className={`w-3 h-3 transition-transform ${showHelp ? "rotate-180" : ""}`} />
-            </button>
-          </div>
-          {showHelp && (
-            <div className="rounded-md bg-white/70 border border-amber-200 p-2 leading-relaxed">
-              <div className="font-medium mb-1">📱 iPhone</div>設定 → Safari → 位置情報<br />
-              <div className="font-medium mt-2 mb-1">🤖 Android</div>アドレスバーの🔒 → 権限 → 位置情報<br />
-              <div className="font-medium mt-2 mb-1">💻 PC</div>アドレスバーの🔒 → サイトの設定 → 位置情報
-            </div>
-          )}
-        </div>
-      )}
 
       <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }
-

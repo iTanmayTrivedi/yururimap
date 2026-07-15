@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MOODS } from "@/lib/session";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Users, Heart } from "lucide-react";
-import { subsInSession } from "./events";
+import { subsInSession } from "@/lib/events";
 
 export const Route = createFileRoute("/live/$code")({
   head: () => ({

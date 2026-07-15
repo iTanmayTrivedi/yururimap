@@ -5,10 +5,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId, MOODS, filterByRange, type TimeRange } from "@/lib/session";
 import { MapView, type MapPoint } from "@/components/MapView";
-import { RangeTabs } from "./map";
+import { RangeTabs } from "@/components/RangeTabs";
 import { useLang, t } from "@/lib/i18n";
 import { FaceIcon } from "@/components/FaceIcon";
-import { Loader2, Trash2, Luggage } from "lucide-react";
+import { loadProfile, saveProfile } from "@/lib/profile";
+import { Loader2, Trash2, Luggage, MapPin, Home as HomeIcon, User, Settings } from "lucide-react";
 
 export const Route = createFileRoute("/my")({
   head: () => ({
@@ -82,10 +83,17 @@ function MyPage() {
     <div className="space-y-4">
       <div className="text-center">
         <h2 className="text-xl font-bold inline-flex items-center gap-2">
-          {t(lang, "旅ログ", "Trip Log")}
-          <Luggage className="w-5 h-5 text-emerald-600" />
+          <User className="w-5 h-5 text-sky-600" />
+          {t(lang, "マイページ", "My Page")}
         </h2>
-        <p className="text-xs text-muted-foreground">My Records</p>
+        <p className="text-xs text-muted-foreground">My Page</p>
+      </div>
+
+      <SettingsCard />
+
+      <div className="pt-2 flex items-center gap-2">
+        <Luggage className="w-4 h-4 text-emerald-600" />
+        <h3 className="text-base font-bold">{t(lang, "旅ログ", "Trip Log")}</h3>
       </div>
 
       <RangeTabs value={range} onChange={setRange} />
@@ -175,6 +183,114 @@ function MyPage() {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function SettingsCard() {
+  const { lang } = useLang();
+  const [locOn, setLocOn] = useState(true);
+  const [homeArea, setHomeArea] = useState("");
+  const [homeLat, setHomeLat] = useState<number | null>(null);
+  const [homeLng, setHomeLng] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("niko_loc_on");
+    setLocOn(saved !== "off");
+    const p = loadProfile();
+    setHomeArea(p.homeArea ?? "");
+    setHomeLat(p.homeLat ?? null);
+    setHomeLng(p.homeLng ?? null);
+  }, []);
+
+  function toggleLoc() {
+    const next = !locOn;
+    setLocOn(next);
+    localStorage.setItem("niko_loc_on", next ? "on" : "off");
+    toast.success(next ? t(lang, "位置情報 ON", "Location ON") : t(lang, "位置情報 OFF", "Location OFF"));
+  }
+
+  function useCurrentAsHome() {
+    if (!("geolocation" in navigator)) {
+      toast.error(t(lang, "位置情報が使えません", "Geolocation unavailable")); return;
+    }
+    setBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setHomeLat(p.coords.latitude); setHomeLng(p.coords.longitude);
+        saveProfile({ ...loadProfile(), homeLat: p.coords.latitude, homeLng: p.coords.longitude, homeArea });
+        setBusy(false);
+        toast.success(t(lang, "現在地を居住地域に設定しました", "Saved current location as home"));
+      },
+      () => { setBusy(false); toast.error(t(lang, "位置情報を取得できません", "Could not get location")); },
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  }
+
+  function saveArea() {
+    saveProfile({ ...loadProfile(), homeArea: homeArea.trim().slice(0, 60), homeLat: homeLat ?? undefined, homeLng: homeLng ?? undefined });
+    toast.success(t(lang, "保存しました", "Saved"));
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
+      <div className="flex items-center gap-2">
+        <Settings className="w-4 h-4 text-sky-600" />
+        <h3 className="text-sm font-bold">{t(lang, "設定", "Settings")}</h3>
+      </div>
+
+      {/* Location toggle */}
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2.5">
+        <MapPin className="w-4 h-4 shrink-0" style={{ color: locOn ? "#059669" : "#9CA3AF" }} />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold">
+            {t(lang, "位置情報", "Location")}
+            <span className="ml-2 text-xs font-bold" style={{ color: locOn ? "#059669" : "#6B7280" }}>
+              {locOn ? "ON" : "OFF"}
+            </span>
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            {locOn
+              ? t(lang, "気持ち投稿に正確な位置を保存します", "Saves exact location on mood posts")
+              : t(lang, "位置は保存しません", "Location not saved")}
+          </div>
+        </div>
+        <button onClick={toggleLoc}
+          className="text-xs font-semibold px-3 py-1.5 rounded-full border border-border bg-card">
+          {locOn ? "ON → OFF" : "OFF → ON"}
+        </button>
+      </div>
+
+      {/* Home area */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <HomeIcon className="w-4 h-4 text-emerald-600" />
+          <span className="text-sm font-semibold">{t(lang, "居住地域（任意）", "Home area (optional)")}</span>
+        </div>
+        <input
+          value={homeArea}
+          onChange={(e) => setHomeArea(e.target.value.slice(0, 60))}
+          placeholder={t(lang, "例：東京都 中野区", "e.g. Nakano, Tokyo")}
+          className="w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm"
+        />
+        <div className="flex gap-2">
+          <button onClick={saveArea}
+            className="flex-1 min-h-[40px] rounded-xl bg-sky-500 text-white text-xs font-bold">
+            {t(lang, "保存", "Save")}
+          </button>
+          <button onClick={useCurrentAsHome} disabled={busy}
+            className="flex-1 min-h-[40px] rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold inline-flex items-center justify-center gap-1 disabled:opacity-50">
+            {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPin className="w-3.5 h-3.5" />}
+            {t(lang, "現在地を使う", "Use current")}
+          </button>
+        </div>
+        {homeLat != null && homeLng != null && (
+          <div className="text-[10px] text-muted-foreground">
+            ✓ {homeLat.toFixed(4)}, {homeLng.toFixed(4)}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
