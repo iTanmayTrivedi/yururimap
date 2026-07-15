@@ -83,10 +83,17 @@ function MyPage() {
     <div className="space-y-4">
       <div className="text-center">
         <h2 className="text-xl font-bold inline-flex items-center gap-2">
-          {t(lang, "旅ログ", "Trip Log")}
-          <Luggage className="w-5 h-5 text-emerald-600" />
+          <User className="w-5 h-5 text-sky-600" />
+          {t(lang, "マイページ", "My Page")}
         </h2>
-        <p className="text-xs text-muted-foreground">My Records</p>
+        <p className="text-xs text-muted-foreground">My Page</p>
+      </div>
+
+      <SettingsCard />
+
+      <div className="pt-2 flex items-center gap-2">
+        <Luggage className="w-4 h-4 text-emerald-600" />
+        <h3 className="text-base font-bold">{t(lang, "旅ログ", "Trip Log")}</h3>
       </div>
 
       <RangeTabs value={range} onChange={setRange} />
