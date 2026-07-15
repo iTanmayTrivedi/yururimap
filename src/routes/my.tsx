@@ -8,7 +8,8 @@ import { MapView, type MapPoint } from "@/components/MapView";
 import { RangeTabs } from "@/components/RangeTabs";
 import { useLang, t } from "@/lib/i18n";
 import { FaceIcon } from "@/components/FaceIcon";
-import { Loader2, Trash2, Luggage } from "lucide-react";
+import { loadProfile, saveProfile } from "@/lib/profile";
+import { Loader2, Trash2, Luggage, MapPin, Home as HomeIcon, User, Settings } from "lucide-react";
 
 export const Route = createFileRoute("/my")({
   head: () => ({
