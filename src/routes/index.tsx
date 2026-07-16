@@ -10,7 +10,7 @@ import { AnimatedScene } from "@/components/AnimatedScene";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { FaceIcon } from "@/components/FaceIcon";
 import { POST_TYPE_LIST } from "@/lib/posts";
-import { Loader2, MapPin, Calendar, Flame, MessageCircleHeart, User, Megaphone as MegaphoneIcon, ChevronRight, Bell } from "lucide-react";
+import { Loader2, MapPin, Calendar, Flame, MessageCircleHeart, User, ChevronRight, Bell } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
