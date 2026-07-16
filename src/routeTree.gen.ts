@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TroubleRouteImport } from './routes/trouble'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as ShareRouteImport } from './routes/share'
 import { Route as MyRouteImport } from './routes/my'
@@ -25,6 +26,11 @@ import { Route as LiveCodeRouteImport } from './routes/live.$code'
 const TroubleRoute = TroubleRouteImport.update({
   id: '/trouble',
   path: '/trouble',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StatsRoute = StatsRouteImport.update({
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/my': typeof MyRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
+  '/terms': typeof TermsRoute
   '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/my': typeof MyRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
+  '/terms': typeof TermsRoute
   '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/my': typeof MyRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
+  '/terms': typeof TermsRoute
   '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/my'
     | '/share'
     | '/stats'
+    | '/terms'
     | '/trouble'
     | '/live/$code'
     | '/post/$type'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/my'
     | '/share'
     | '/stats'
+    | '/terms'
     | '/trouble'
     | '/live/$code'
     | '/post/$type'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/my'
     | '/share'
     | '/stats'
+    | '/terms'
     | '/trouble'
     | '/live/$code'
     | '/post/$type'
@@ -180,6 +192,7 @@ export interface RootRouteChildren {
   MyRoute: typeof MyRoute
   ShareRoute: typeof ShareRoute
   StatsRoute: typeof StatsRoute
+  TermsRoute: typeof TermsRoute
   TroubleRoute: typeof TroubleRoute
   LiveCodeRoute: typeof LiveCodeRoute
   PostTypeRoute: typeof PostTypeRoute
@@ -193,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/trouble'
       fullPath: '/trouble'
       preLoaderRoute: typeof TroubleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stats': {
@@ -284,6 +304,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyRoute: MyRoute,
   ShareRoute: ShareRoute,
   StatsRoute: StatsRoute,
+  TermsRoute: TermsRoute,
   TroubleRoute: TroubleRoute,
   LiveCodeRoute: LiveCodeRoute,
   PostTypeRoute: PostTypeRoute,
