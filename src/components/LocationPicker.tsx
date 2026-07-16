@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import { Search, Loader2, MapPin, Home as HomeIcon, Map as MapIcon } from "lucide-react";
+import { Search, Loader2, MapPin, Home as HomeIcon } from "lucide-react";
 import { useLang, t } from "@/lib/i18n";
 import { loadProfile } from "@/lib/profile";
 import { toast } from "sonner";
 
 type SearchHit = { display_name: string; lat: string; lon: string };
-type LocSource = "current" | "home" | "map" | null;
+type LocSource = "current" | "home" | "map" | "search" | null;
 
 type Props = {
   lat: number | null;
   lng: number | null;
-  onPick: (lat: number, lng: number, source: LocSource) => void;
+  onPick: (lat: number, lng: number, label?: string | null, source?: LocSource) => void;
   height?: number;
-  accentColor?: string; // for the "active source" chip
+  accentColor?: string;
 };
 
 export function LocationPicker({ lat, lng, onPick, height = 220, accentColor = "#10B981" }: Props) {
@@ -26,7 +26,7 @@ export function LocationPicker({ lat, lng, onPick, height = 220, accentColor = "
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (p) => { onPick(p.coords.latitude, p.coords.longitude, "current"); setSource("current"); },
+      (p) => { onPick(p.coords.latitude, p.coords.longitude, null, "current"); setSource("current"); },
       () => toast.error(t(lang, "位置情報を取得できません", "Could not get location")),
       { enableHighAccuracy: true, timeout: 8000 },
     );
@@ -34,8 +34,10 @@ export function LocationPicker({ lat, lng, onPick, height = 220, accentColor = "
   function useHome() {
     const profile = loadProfile();
     if (profile.homeLat != null && profile.homeLng != null) {
-      onPick(profile.homeLat, profile.homeLng, "home");
+      onPick(profile.homeLat, profile.homeLng, profile.homeArea ?? null, "home");
       setSource("home");
+    } else if (profile.homeArea) {
+      toast.info(t(lang, "居住地域の位置がまだ保存されていません。マイページで「保存」を押してください。", "Home area location isn't saved yet. Please press Save on My Page."));
     } else {
       toast.info(t(lang, "居住地域が未登録です（マイページで登録できます）", "Home area not set (set it on My Page)"));
     }
@@ -43,15 +45,15 @@ export function LocationPicker({ lat, lng, onPick, height = 220, accentColor = "
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <LocBtn active={source === "current"} onClick={useCurrent} accentColor={accentColor}
           icon={<MapPin className="w-4 h-4" />} label={t(lang, "現在地", "Current")} />
         <LocBtn active={source === "home"} onClick={useHome} accentColor={accentColor}
           icon={<HomeIcon className="w-4 h-4" />} label={t(lang, "居住地域", "Home")} />
-        <LocBtn active={source === "map"} onClick={() => setSource("map")} accentColor={accentColor}
-          icon={<MapIcon className="w-4 h-4" />} label={t(lang, "地図で選ぶ", "Map")} />
       </div>
-      <PickerMap lat={lat} lng={lng} height={height} onPick={(la, ln) => { onPick(la, ln, "map"); setSource("map"); }} />
+      <PickerMap lat={lat} lng={lng} height={height}
+        onPickMap={(la, ln) => { onPick(la, ln, null, "map"); setSource("map"); }}
+        onPickSearch={(la, ln, label) => { onPick(la, ln, label, "search"); setSource("search"); }} />
       {lat != null && lng != null && (
         <div className="text-[11px] text-emerald-700">
           ✓ {lat.toFixed(4)}, {lng.toFixed(4)}
@@ -76,13 +78,18 @@ function LocBtn({ active, onClick, icon, label, accentColor }:
   );
 }
 
-function PickerMap({ lat, lng, onPick, height }: { lat: number | null; lng: number | null; onPick: (lat: number, lng: number) => void; height: number }) {
+function PickerMap({ lat, lng, onPickMap, onPickSearch, height }: {
+  lat: number | null; lng: number | null;
+  onPickMap: (lat: number, lng: number) => void;
+  onPickSearch: (lat: number, lng: number, label: string) => void;
+  height: number;
+}) {
   const { lang } = useLang();
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.CircleMarker | null>(null);
-  const onPickRef = useRef(onPick);
-  useEffect(() => { onPickRef.current = onPick; }, [onPick]);
+  const onPickMapRef = useRef(onPickMap);
+  useEffect(() => { onPickMapRef.current = onPickMap; }, [onPickMap]);
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchHit[]>([]);
@@ -111,7 +118,7 @@ function PickerMap({ lat, lng, onPick, height }: { lat: number | null; lng: numb
   function choose(h: SearchHit) {
     const la = parseFloat(h.lat); const ln = parseFloat(h.lon);
     if (Number.isFinite(la) && Number.isFinite(ln)) {
-      onPickRef.current(la, ln);
+      onPickSearch(la, ln, h.display_name);
       setQuery(h.display_name);
       setOpen(false);
     }
@@ -127,7 +134,7 @@ function PickerMap({ lat, lng, onPick, height }: { lat: number | null; lng: numb
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap", maxZoom: 19, minZoom: 2, subdomains: ["a","b","c"],
     }).addTo(m);
-    m.on("click", (e: L.LeafletMouseEvent) => onPickRef.current(e.latlng.lat, e.latlng.lng));
+    m.on("click", (e: L.LeafletMouseEvent) => onPickMapRef.current(e.latlng.lat, e.latlng.lng));
     mapRef.current = m;
     setTimeout(() => m.invalidateSize(), 80);
     return () => { m.remove(); mapRef.current = null; };
