@@ -10,7 +10,7 @@ import { AnimatedScene } from "@/components/AnimatedScene";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { FaceIcon } from "@/components/FaceIcon";
 import { POST_TYPE_LIST } from "@/lib/posts";
-import { Loader2, MapPin, Calendar, Flame, MessageCircleHeart, User, Megaphone as MegaphoneIcon, ChevronRight, Bell } from "lucide-react";
+import { Loader2, MapPin, Calendar, Flame, MessageCircleHeart, User, ChevronRight, Bell } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -79,16 +79,31 @@ function HomePage() {
 
   return (
     <div className="space-y-4">
-      {/* Feedback */}
-      <div className="flex items-start justify-between -mt-1">
-        <button onClick={() => setFeedbackOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-[11px] font-semibold text-pink-700 shadow-sm active:scale-[0.97]">
-          <MessageCircleHeart className="w-3.5 h-3.5" /> {t(lang, "ご意見・ご感想", "Feedback")}
-        </button>
-        <Link to="/announcements"
-          className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-800 shadow-sm">
-          <Bell className="w-3.5 h-3.5" /> {t(lang, "お知らせ", "Announcements")}
+      {/* Top row: My Page (left) + Feedback + Announcements */}
+      <div className="flex items-center justify-between gap-2 -mt-1">
+        <Link to="/my"
+          className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 pl-1.5 pr-3 py-1 shadow-sm active:scale-[0.98]">
+          <span className="w-7 h-7 rounded-full bg-white border border-sky-200 flex items-center justify-center">
+            <User className="w-4 h-4 text-sky-700" />
+          </span>
+          <span className="text-[11px] font-bold text-sky-800 leading-tight">
+            {t(lang, "マイページ", "My Page")}
+            <span className="block text-[9px] font-normal text-sky-700/70">
+              {t(lang, "位置情報・居住地域", "Location & profile")}
+            </span>
+          </span>
+          <ChevronRight className="w-3.5 h-3.5 text-sky-600" />
         </Link>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setFeedbackOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-[11px] font-semibold text-pink-700 shadow-sm active:scale-[0.97]">
+            <MessageCircleHeart className="w-3.5 h-3.5" /> {t(lang, "ご意見", "Feedback")}
+          </button>
+          <Link to="/announcements"
+            className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-800 shadow-sm">
+            <Bell className="w-3.5 h-3.5" /> {t(lang, "お知らせ", "News")}
+          </Link>
+        </div>
       </div>
 
       {/* Three main post-type tiles */}
@@ -106,31 +121,6 @@ function HomePage() {
         ))}
       </div>
 
-      {/* Secondary tiles: My Page / Announcements */}
-      <div className="grid grid-cols-2 gap-2">
-        <Link to="/my"
-          className="rounded-2xl border border-border bg-card p-3 flex items-center gap-2 shadow-sm active:scale-[0.98]">
-          <span className="w-10 h-10 rounded-full bg-sky-100 border border-sky-200 flex items-center justify-center">
-            <User className="w-5 h-5 text-sky-700" />
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold">{t(lang, "マイページ", "My Page")}</div>
-            <div className="text-[10px] text-muted-foreground">{t(lang, "位置情報・居住地域", "Location & home area")}</div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </Link>
-        <Link to="/announcements"
-          className="rounded-2xl border border-border bg-card p-3 flex items-center gap-2 shadow-sm active:scale-[0.98]">
-          <span className="w-10 h-10 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-amber-700" />
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold">{t(lang, "お知らせ", "Announcements")}</div>
-            <div className="text-[10px] text-muted-foreground">{t(lang, "運営からのお知らせ", "News from the team")}</div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </Link>
-      </div>
 
       {/* Feelings — mood input */}
       <div>

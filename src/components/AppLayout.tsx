@@ -5,7 +5,7 @@ import { useLang } from "@/lib/i18n";
 
 const tabs = [
   { to: "/",        icon: Smile,       ja: "気持ち",   en: "Mood" },
-  { to: "/my",      icon: Luggage,     ja: "旅ログ",   en: "Trip" },
+  { to: "/trip",    icon: Luggage,     ja: "旅ログ",   en: "Trip" },
   { to: "/share",   icon: Users,       ja: "つながり", en: "Connect" },
   { to: "/events",  icon: PartyPopper, ja: "イベント", en: "Events" },
   { to: "/trouble", icon: AlertCircle, ja: "困った",   en: "Trouble" },

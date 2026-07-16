@@ -191,11 +191,8 @@ function PostPage() {
 
       {/* Location */}
       <Section label={t(lang, "場所（任意）", "Location (optional)")} accent={meta.color}>
-        <input value={placeLabel} onChange={(e) => setPlaceLabel(e.target.value.slice(0, 120))}
-          placeholder={t(lang, "例：〇〇公園、△△駅前", "e.g. Central Park, in front of ○○ Station")}
-          className="w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm mb-2" />
         <LocationPicker lat={lat} lng={lng} accentColor={meta.color}
-          onPick={(la, ln) => { setLat(la); setLng(ln); }} />
+          onPick={(la, ln, label) => { setLat(la); setLng(ln); if (label) setPlaceLabel(label); }} />
       </Section>
 
       {/* Promote: date/time and official link */}
