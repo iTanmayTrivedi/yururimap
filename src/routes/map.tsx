@@ -177,14 +177,16 @@ function PostMap({ posts, counts, onSelect }:
     layer.clearLayers();
     posts.forEach((p) => {
       const meta = POST_TYPES[p.type];
-      const showCount = p.type === "request";
-      const count = (counts.get(p.id) ?? 0) + (showCount ? 1 : 0);
+      const isResolved = (p as PostRow & { resolved?: boolean }).resolved === true;
+      const showCount = p.type === "request" && !isResolved;
+      const count = (counts.get(p.id) ?? 0) + (p.type === "request" ? 1 : 0);
       const size = showCount ? Math.min(46, 26 + Math.log2(Math.max(1, count)) * 6) : 30;
-      const label = showCount ? String(count) : meta.emoji;
+      const bg = isResolved ? "#EC4899" : meta.color;
+      const label = isResolved ? "♥" : showCount ? String(count) : meta.emoji;
       const fontSize = showCount ? Math.max(11, size * 0.42) : 16;
       const html = `
         <div style="position:relative;width:${size}px;height:${size + 8}px;">
-          <div style="position:absolute;top:0;left:50%;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${meta.color};transform:translateX(-50%) rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.25);">
+          <div style="position:absolute;top:0;left:50%;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${bg};transform:translateX(-50%) rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.25);">
             <span style="transform:rotate(45deg);color:#fff;font-weight:800;font-size:${fontSize}px;font-family:inherit;line-height:1;">${label}</span>
           </div>
         </div>`;
