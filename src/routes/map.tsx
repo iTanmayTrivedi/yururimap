@@ -203,10 +203,11 @@ function PostMap({ posts, counts, onSelect }:
   return <div ref={ref} style={{ height: 380, width: "100%" }} />;
 }
 
-function PostCard({ post, likeCount, onLike, onClose }:
-  { post: PostRow; likeCount: number; onLike: () => void; onClose: () => void }) {
+function PostCard({ post, likeCount, onLike, onClose, onReport }:
+  { post: PostRow; likeCount: number; onLike: () => void; onClose: () => void; onReport: () => void }) {
   const { lang } = useLang();
   const meta = POST_TYPES[post.type];
+  const isResolved = (post as PostRow & { resolved?: boolean }).resolved === true;
   return (
     <div className="rounded-2xl border bg-card p-4 shadow-md space-y-3"
       style={{ borderColor: `${meta.color}66` }}>
