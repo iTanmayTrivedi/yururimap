@@ -22,11 +22,13 @@ import { Route as LifeRouteImport } from './routes/life'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as CompanyRouteImport } from './routes/company'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
+import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TroubleMapRouteImport } from './routes/trouble_.map'
 import { Route as ResolvePostIdRouteImport } from './routes/resolve.$postId'
 import { Route as PostTypeRouteImport } from './routes/post.$type'
 import { Route as LiveCodeRouteImport } from './routes/live.$code'
+import { Route as ActivitiesNewRouteImport } from './routes/activities.new'
 
 const TroubleRoute = TroubleRouteImport.update({
   id: '/trouble',
@@ -93,6 +95,11 @@ const AnnouncementsRoute = AnnouncementsRouteImport.update({
   path: '/announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActivitiesRoute = ActivitiesRouteImport.update({
+  id: '/activities',
+  path: '/activities',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -118,9 +125,15 @@ const LiveCodeRoute = LiveCodeRouteImport.update({
   path: '/live/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActivitiesNewRoute = ActivitiesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ActivitiesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activities': typeof ActivitiesRouteWithChildren
   '/announcements': typeof AnnouncementsRoute
   '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
@@ -134,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/trip': typeof TripRoute
   '/trouble': typeof TroubleRoute
+  '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
@@ -141,6 +155,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activities': typeof ActivitiesRouteWithChildren
   '/announcements': typeof AnnouncementsRoute
   '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
@@ -154,6 +169,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/trip': typeof TripRoute
   '/trouble': typeof TroubleRoute
+  '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
@@ -162,6 +178,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activities': typeof ActivitiesRouteWithChildren
   '/announcements': typeof AnnouncementsRoute
   '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
@@ -175,6 +192,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/trip': typeof TripRoute
   '/trouble': typeof TroubleRoute
+  '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
@@ -184,6 +202,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activities'
     | '/announcements'
     | '/company'
     | '/events'
@@ -197,6 +216,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/trip'
     | '/trouble'
+    | '/activities/new'
     | '/live/$code'
     | '/post/$type'
     | '/resolve/$postId'
@@ -204,6 +224,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activities'
     | '/announcements'
     | '/company'
     | '/events'
@@ -217,6 +238,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/trip'
     | '/trouble'
+    | '/activities/new'
     | '/live/$code'
     | '/post/$type'
     | '/resolve/$postId'
@@ -224,6 +246,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/activities'
     | '/announcements'
     | '/company'
     | '/events'
@@ -237,6 +260,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/trip'
     | '/trouble'
+    | '/activities/new'
     | '/live/$code'
     | '/post/$type'
     | '/resolve/$postId'
@@ -245,6 +269,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivitiesRoute: typeof ActivitiesRouteWithChildren
   AnnouncementsRoute: typeof AnnouncementsRoute
   CompanyRoute: typeof CompanyRoute
   EventsRoute: typeof EventsRoute
@@ -357,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnnouncementsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/activities': {
+      id: '/activities'
+      path: '/activities'
+      fullPath: '/activities'
+      preLoaderRoute: typeof ActivitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -392,11 +424,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/activities/new': {
+      id: '/activities/new'
+      path: '/new'
+      fullPath: '/activities/new'
+      preLoaderRoute: typeof ActivitiesNewRouteImport
+      parentRoute: typeof ActivitiesRoute
+    }
   }
 }
 
+interface ActivitiesRouteChildren {
+  ActivitiesNewRoute: typeof ActivitiesNewRoute
+}
+
+const ActivitiesRouteChildren: ActivitiesRouteChildren = {
+  ActivitiesNewRoute: ActivitiesNewRoute,
+}
+
+const ActivitiesRouteWithChildren = ActivitiesRoute._addFileChildren(
+  ActivitiesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivitiesRoute: ActivitiesRouteWithChildren,
   AnnouncementsRoute: AnnouncementsRoute,
   CompanyRoute: CompanyRoute,
   EventsRoute: EventsRoute,

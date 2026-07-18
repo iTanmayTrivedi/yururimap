@@ -87,6 +87,7 @@ function PostPage() {
         photo_url = await uploadPhoto(photoFile);
       }
       const sid = getSessionId();
+      const { demoSnapshot } = await import("@/lib/profile");
       const { error } = await supabase.from("posts").insert({
         session_id: sid,
         type,
@@ -99,6 +100,7 @@ function PostPage() {
         official_url: type === "promote" && officialUrl.trim() ? officialUrl.trim().slice(0, 300) : null,
         photo_url,
         lat, lng,
+        ...demoSnapshot(),
       });
       if (error) throw error;
       toast.success(t(lang, "投稿しました。ありがとうございます！", "Posted. Thank you!"));
