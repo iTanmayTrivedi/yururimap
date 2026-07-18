@@ -14,6 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          activity_type: string
+          age_group: string | null
+          created_at: string
+          description: string
+          gender: string | null
+          hidden: boolean
+          home_area: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          official_url: string | null
+          photo_url: string | null
+          place_label: string | null
+          reviewed_at: string | null
+          scope: string
+          session_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_type: string
+          age_group?: string | null
+          created_at?: string
+          description: string
+          gender?: string | null
+          hidden?: boolean
+          home_area?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          official_url?: string | null
+          photo_url?: string | null
+          place_label?: string | null
+          reviewed_at?: string | null
+          scope?: string
+          session_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string
+          age_group?: string | null
+          created_at?: string
+          description?: string
+          gender?: string | null
+          hidden?: boolean
+          home_area?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          official_url?: string | null
+          photo_url?: string | null
+          place_label?: string | null
+          reviewed_at?: string | null
+          scope?: string
+          session_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      activity_likes: {
+        Row: {
+          activity_id: string
+          age_group: string | null
+          created_at: string
+          gender: string | null
+          home_area: string | null
+          id: string
+          session_id: string
+        }
+        Insert: {
+          activity_id: string
+          age_group?: string | null
+          created_at?: string
+          gender?: string | null
+          home_area?: string | null
+          id?: string
+          session_id: string
+        }
+        Update: {
+          activity_id?: string
+          age_group?: string | null
+          created_at?: string
+          gender?: string | null
+          home_area?: string | null
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_likes_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_secret: {
         Row: {
           id: number
@@ -459,19 +563,28 @@ export type Database = {
       }
       post_likes: {
         Row: {
+          age_group: string | null
           created_at: string
+          gender: string | null
+          home_area: string | null
           id: string
           post_id: string
           session_id: string
         }
         Insert: {
+          age_group?: string | null
           created_at?: string
+          gender?: string | null
+          home_area?: string | null
           id?: string
           post_id: string
           session_id: string
         }
         Update: {
+          age_group?: string | null
           created_at?: string
+          gender?: string | null
+          home_area?: string | null
           id?: string
           post_id?: string
           session_id?: string
@@ -486,17 +599,77 @@ export type Database = {
           },
         ]
       }
+      post_reports: {
+        Row: {
+          activity_id: string | null
+          created_at: string
+          id: string
+          post_id: string | null
+          reason: string | null
+          resolution_id: string | null
+          session_id: string
+          status: string
+        }
+        Insert: {
+          activity_id?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          reason?: string | null
+          resolution_id?: string | null
+          session_id: string
+          status?: string
+        }
+        Update: {
+          activity_id?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          reason?: string | null
+          resolution_id?: string | null
+          session_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reports_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_reports_resolution_id_fkey"
+            columns: ["resolution_id"]
+            isOneToOne: false
+            referencedRelation: "resolution_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           affected_group: string | null
+          age_group: string | null
           created_at: string
           description: string
+          gender: string | null
+          hidden: boolean
+          home_area: string | null
           id: string
           lat: number | null
           lng: number | null
           official_url: string | null
           photo_url: string | null
           place_label: string | null
+          resolved: boolean
           session_id: string
           title: string | null
           type: Database["public"]["Enums"]["post_type"]
@@ -506,14 +679,19 @@ export type Database = {
         }
         Insert: {
           affected_group?: string | null
+          age_group?: string | null
           created_at?: string
           description: string
+          gender?: string | null
+          hidden?: boolean
+          home_area?: string | null
           id?: string
           lat?: number | null
           lng?: number | null
           official_url?: string | null
           photo_url?: string | null
           place_label?: string | null
+          resolved?: boolean
           session_id: string
           title?: string | null
           type: Database["public"]["Enums"]["post_type"]
@@ -523,14 +701,19 @@ export type Database = {
         }
         Update: {
           affected_group?: string | null
+          age_group?: string | null
           created_at?: string
           description?: string
+          gender?: string | null
+          hidden?: boolean
+          home_area?: string | null
           id?: string
           lat?: number | null
           lng?: number | null
           official_url?: string | null
           photo_url?: string | null
           place_label?: string | null
+          resolved?: boolean
           session_id?: string
           title?: string | null
           type?: Database["public"]["Enums"]["post_type"]
@@ -539,6 +722,59 @@ export type Database = {
           why_needed?: string | null
         }
         Relationships: []
+      }
+      resolution_reports: {
+        Row: {
+          age_group: string | null
+          created_at: string
+          description: string
+          gender: string | null
+          hidden: boolean
+          home_area: string | null
+          id: string
+          photo_url: string
+          related_post_id: string
+          reviewed_at: string | null
+          session_id: string
+          status: string
+        }
+        Insert: {
+          age_group?: string | null
+          created_at?: string
+          description: string
+          gender?: string | null
+          hidden?: boolean
+          home_area?: string | null
+          id?: string
+          photo_url: string
+          related_post_id: string
+          reviewed_at?: string | null
+          session_id: string
+          status?: string
+        }
+        Update: {
+          age_group?: string | null
+          created_at?: string
+          description?: string
+          gender?: string | null
+          hidden?: boolean
+          home_area?: string | null
+          id?: string
+          photo_url?: string
+          related_post_id?: string
+          reviewed_at?: string | null
+          session_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resolution_reports_related_post_id_fkey"
+            columns: ["related_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       submissions: {
         Row: {
@@ -658,6 +894,27 @@ export type Database = {
           lat?: number
           lng?: number
           place_label?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
+      verified_posters: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
           session_id?: string
         }
         Relationships: []

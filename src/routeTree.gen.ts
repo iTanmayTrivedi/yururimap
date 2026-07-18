@@ -14,15 +14,21 @@ import { Route as TripRouteImport } from './routes/trip'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as ShareRouteImport } from './routes/share'
+import { Route as SchoolRouteImport } from './routes/school'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as MoreRouteImport } from './routes/more'
 import { Route as MapRouteImport } from './routes/map'
+import { Route as LifeRouteImport } from './routes/life'
 import { Route as EventsRouteImport } from './routes/events'
+import { Route as CompanyRouteImport } from './routes/company'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
+import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TroubleMapRouteImport } from './routes/trouble_.map'
+import { Route as ResolvePostIdRouteImport } from './routes/resolve.$postId'
 import { Route as PostTypeRouteImport } from './routes/post.$type'
 import { Route as LiveCodeRouteImport } from './routes/live.$code'
+import { Route as ActivitiesNewRouteImport } from './routes/activities.new'
 
 const TroubleRoute = TroubleRouteImport.update({
   id: '/trouble',
@@ -49,6 +55,11 @@ const ShareRoute = ShareRouteImport.update({
   path: '/share',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SchoolRoute = SchoolRouteImport.update({
+  id: '/school',
+  path: '/school',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MyRoute = MyRouteImport.update({
   id: '/my',
   path: '/my',
@@ -64,14 +75,29 @@ const MapRoute = MapRouteImport.update({
   path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LifeRoute = LifeRouteImport.update({
+  id: '/life',
+  path: '/life',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsRoute = EventsRouteImport.update({
   id: '/events',
   path: '/events',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompanyRoute = CompanyRouteImport.update({
+  id: '/company',
+  path: '/company',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnnouncementsRoute = AnnouncementsRouteImport.update({
   id: '/announcements',
   path: '/announcements',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivitiesRoute = ActivitiesRouteImport.update({
+  id: '/activities',
+  path: '/activities',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -84,6 +110,11 @@ const TroubleMapRoute = TroubleMapRouteImport.update({
   path: '/trouble/map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResolvePostIdRoute = ResolvePostIdRouteImport.update({
+  id: '/resolve/$postId',
+  path: '/resolve/$postId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PostTypeRoute = PostTypeRouteImport.update({
   id: '/post/$type',
   path: '/post/$type',
@@ -94,114 +125,159 @@ const LiveCodeRoute = LiveCodeRouteImport.update({
   path: '/live/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActivitiesNewRoute = ActivitiesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ActivitiesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activities': typeof ActivitiesRouteWithChildren
   '/announcements': typeof AnnouncementsRoute
+  '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
+  '/life': typeof LifeRoute
   '/map': typeof MapRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
+  '/school': typeof SchoolRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
   '/terms': typeof TermsRoute
   '/trip': typeof TripRoute
   '/trouble': typeof TroubleRoute
+  '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
+  '/resolve/$postId': typeof ResolvePostIdRoute
   '/trouble/map': typeof TroubleMapRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activities': typeof ActivitiesRouteWithChildren
   '/announcements': typeof AnnouncementsRoute
+  '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
+  '/life': typeof LifeRoute
   '/map': typeof MapRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
+  '/school': typeof SchoolRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
   '/terms': typeof TermsRoute
   '/trip': typeof TripRoute
   '/trouble': typeof TroubleRoute
+  '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
+  '/resolve/$postId': typeof ResolvePostIdRoute
   '/trouble/map': typeof TroubleMapRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activities': typeof ActivitiesRouteWithChildren
   '/announcements': typeof AnnouncementsRoute
+  '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
+  '/life': typeof LifeRoute
   '/map': typeof MapRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
+  '/school': typeof SchoolRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
   '/terms': typeof TermsRoute
   '/trip': typeof TripRoute
   '/trouble': typeof TroubleRoute
+  '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
+  '/resolve/$postId': typeof ResolvePostIdRoute
   '/trouble_/map': typeof TroubleMapRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activities'
     | '/announcements'
+    | '/company'
     | '/events'
+    | '/life'
     | '/map'
     | '/more'
     | '/my'
+    | '/school'
     | '/share'
     | '/stats'
     | '/terms'
     | '/trip'
     | '/trouble'
+    | '/activities/new'
     | '/live/$code'
     | '/post/$type'
+    | '/resolve/$postId'
     | '/trouble/map'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activities'
     | '/announcements'
+    | '/company'
     | '/events'
+    | '/life'
     | '/map'
     | '/more'
     | '/my'
+    | '/school'
     | '/share'
     | '/stats'
     | '/terms'
     | '/trip'
     | '/trouble'
+    | '/activities/new'
     | '/live/$code'
     | '/post/$type'
+    | '/resolve/$postId'
     | '/trouble/map'
   id:
     | '__root__'
     | '/'
+    | '/activities'
     | '/announcements'
+    | '/company'
     | '/events'
+    | '/life'
     | '/map'
     | '/more'
     | '/my'
+    | '/school'
     | '/share'
     | '/stats'
     | '/terms'
     | '/trip'
     | '/trouble'
+    | '/activities/new'
     | '/live/$code'
     | '/post/$type'
+    | '/resolve/$postId'
     | '/trouble_/map'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivitiesRoute: typeof ActivitiesRouteWithChildren
   AnnouncementsRoute: typeof AnnouncementsRoute
+  CompanyRoute: typeof CompanyRoute
   EventsRoute: typeof EventsRoute
+  LifeRoute: typeof LifeRoute
   MapRoute: typeof MapRoute
   MoreRoute: typeof MoreRoute
   MyRoute: typeof MyRoute
+  SchoolRoute: typeof SchoolRoute
   ShareRoute: typeof ShareRoute
   StatsRoute: typeof StatsRoute
   TermsRoute: typeof TermsRoute
@@ -209,6 +285,7 @@ export interface RootRouteChildren {
   TroubleRoute: typeof TroubleRoute
   LiveCodeRoute: typeof LiveCodeRoute
   PostTypeRoute: typeof PostTypeRoute
+  ResolvePostIdRoute: typeof ResolvePostIdRoute
   TroubleMapRoute: typeof TroubleMapRoute
 }
 
@@ -249,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/school': {
+      id: '/school'
+      path: '/school'
+      fullPath: '/school'
+      preLoaderRoute: typeof SchoolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my': {
       id: '/my'
       path: '/my'
@@ -270,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/life': {
+      id: '/life'
+      path: '/life'
+      fullPath: '/life'
+      preLoaderRoute: typeof LifeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events': {
       id: '/events'
       path: '/events'
@@ -277,11 +368,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/company': {
+      id: '/company'
+      path: '/company'
+      fullPath: '/company'
+      preLoaderRoute: typeof CompanyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/announcements': {
       id: '/announcements'
       path: '/announcements'
       fullPath: '/announcements'
       preLoaderRoute: typeof AnnouncementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activities': {
+      id: '/activities'
+      path: '/activities'
+      fullPath: '/activities'
+      preLoaderRoute: typeof ActivitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -298,6 +403,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TroubleMapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/resolve/$postId': {
+      id: '/resolve/$postId'
+      path: '/resolve/$postId'
+      fullPath: '/resolve/$postId'
+      preLoaderRoute: typeof ResolvePostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/post/$type': {
       id: '/post/$type'
       path: '/post/$type'
@@ -312,16 +424,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/activities/new': {
+      id: '/activities/new'
+      path: '/new'
+      fullPath: '/activities/new'
+      preLoaderRoute: typeof ActivitiesNewRouteImport
+      parentRoute: typeof ActivitiesRoute
+    }
   }
 }
 
+interface ActivitiesRouteChildren {
+  ActivitiesNewRoute: typeof ActivitiesNewRoute
+}
+
+const ActivitiesRouteChildren: ActivitiesRouteChildren = {
+  ActivitiesNewRoute: ActivitiesNewRoute,
+}
+
+const ActivitiesRouteWithChildren = ActivitiesRoute._addFileChildren(
+  ActivitiesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivitiesRoute: ActivitiesRouteWithChildren,
   AnnouncementsRoute: AnnouncementsRoute,
+  CompanyRoute: CompanyRoute,
   EventsRoute: EventsRoute,
+  LifeRoute: LifeRoute,
   MapRoute: MapRoute,
   MoreRoute: MoreRoute,
   MyRoute: MyRoute,
+  SchoolRoute: SchoolRoute,
   ShareRoute: ShareRoute,
   StatsRoute: StatsRoute,
   TermsRoute: TermsRoute,
@@ -329,6 +464,7 @@ const rootRouteChildren: RootRouteChildren = {
   TroubleRoute: TroubleRoute,
   LiveCodeRoute: LiveCodeRoute,
   PostTypeRoute: PostTypeRoute,
+  ResolvePostIdRoute: ResolvePostIdRoute,
   TroubleMapRoute: TroubleMapRoute,
 }
 export const routeTree = rootRouteImport

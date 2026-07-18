@@ -1,21 +1,20 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Smile, Luggage, Users, PartyPopper, BarChart3, Languages, AlertCircle } from "lucide-react";
+import { Map as MapIcon, Home, Briefcase, GraduationCap, Sparkles, User, Languages } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
 
 const tabs = [
-  { to: "/",        icon: Smile,       ja: "気持ち",   en: "Mood" },
-  { to: "/trip",    icon: Luggage,     ja: "旅ログ",   en: "Trip" },
-  { to: "/share",   icon: Users,       ja: "つながり", en: "Connect" },
-  { to: "/events",  icon: PartyPopper, ja: "イベント", en: "Events" },
-  { to: "/trouble", icon: AlertCircle, ja: "困った",   en: "Trouble" },
-  { to: "/stats",   icon: BarChart3,   ja: "集計",     en: "Stats" },
+  { to: "/map",         icon: MapIcon,        ja: "マップ",   en: "Map" },
+  { to: "/life",        icon: Home,           ja: "暮らし",   en: "Life" },
+  { to: "/company",     icon: Briefcase,      ja: "会社",     en: "Work" },
+  { to: "/school",      icon: GraduationCap,  ja: "学校",     en: "School" },
+  { to: "/activities",  icon: Sparkles,       ja: "取り組み", en: "Activities" },
+  { to: "/my",          icon: User,           ja: "マイページ", en: "My" },
 ] as const;
 
 export function AppLayout({ children }: { children?: ReactNode }) {
   const { lang, setLang } = useLang();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  // Presentation / big-screen views bypass the mobile shell entirely.
   if (pathname.startsWith("/live/")) {
     return <>{children ?? <Outlet />}</>;
   }
@@ -24,16 +23,12 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       <div className="w-full max-w-[430px] flex flex-col min-h-screen relative">
         <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border px-4 py-3 shadow-sm">
           <div className="relative text-center">
-            <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "#EC4899", letterSpacing: "-0.01em" }}>
-              Yururi<span style={{ color: "#A855F7" }}>Map</span>
+            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: "#10B981" }}>
+              みんなの<span style={{ color: "#EC4899" }}>困った</span>Map
             </h1>
-            <p className="text-[11px] font-medium mt-0.5">
-              <span style={{ color: "#EC4899" }}>Happy</span>
-              <span className="text-muted-foreground"> & </span>
-              <span style={{ color: "#A855F7" }}>Sad</span>
-              <span className="text-muted-foreground"> Map</span>
+            <p className="text-[10px] font-medium mt-0.5 text-muted-foreground">
+              Everyone&apos;s Problem Map
             </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">ニコニコしょんぼりマップ</p>
             <button
               onClick={() => setLang(lang === "ja" ? "en" : "ja")}
               title="Language / 言語"
@@ -49,16 +44,15 @@ export function AppLayout({ children }: { children?: ReactNode }) {
           <div className="grid grid-cols-6">
             {tabs.map((t) => {
               const Icon = t.icon;
-              const isTrouble = t.to === "/trouble";
               return (
                 <Link
                   key={t.to}
                   to={t.to}
-                  className={`flex flex-col items-center justify-center py-2.5 select-none transition-colors ${isTrouble ? "text-rose-500" : "text-muted-foreground"}`}
-                  activeProps={{ className: `flex flex-col items-center justify-center py-2.5 select-none ${isTrouble ? "text-rose-600" : "text-primary"}` }}
+                  className="flex flex-col items-center justify-center py-2.5 select-none transition-colors text-muted-foreground"
+                  activeProps={{ className: "flex flex-col items-center justify-center py-2.5 select-none text-primary" }}
                   activeOptions={{ exact: true }}
                 >
-                  <Icon className={`w-5 h-5 ${isTrouble ? "fill-rose-100" : ""}`} />
+                  <Icon className="w-5 h-5" />
                   <span className="text-[10px] mt-1 font-medium leading-none">{lang === "ja" ? t.ja : t.en}</span>
                 </Link>
               );

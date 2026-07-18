@@ -67,7 +67,8 @@ function MapPage() {
   async function like(postId: string) {
     try {
       const sid = getSessionId();
-      const { error } = await supabase.from("post_likes").insert({ post_id: postId, session_id: sid });
+      const { demoSnapshot } = await import("@/lib/profile");
+      const { error } = await supabase.from("post_likes").insert({ post_id: postId, session_id: sid, ...demoSnapshot() });
       if (error) {
         if (error.code === "23505") { toast.info(t(lang, "すでに反応しました", "You already reacted")); return; }
         throw error;
