@@ -276,6 +276,19 @@ function PostCard({ post, likeCount, onLike, onClose, onReport }:
         {lang === "ja" ? meta.actionJa : meta.actionEn}
         <span className="ml-1 text-sm font-extrabold">{likeCount}{lang === "ja" ? "人" : ""}</span>
       </button>
+
+      <div className="flex gap-2">
+        {post.type === "request" && !isResolved && (
+          <Link to="/resolve/$postId" params={{ postId: post.id }}
+            className="flex-1 min-h-[40px] rounded-xl bg-pink-500 text-white font-bold text-xs inline-flex items-center justify-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5" /> {t(lang, "解決を報告する", "Report Resolution")}
+          </Link>
+        )}
+        <button onClick={onReport}
+          className="min-h-[40px] px-3 rounded-xl border border-border text-muted-foreground text-xs inline-flex items-center gap-1">
+          <Flag className="w-3 h-3" /> {t(lang, "報告", "Report")}
+        </button>
+      </div>
     </div>
   );
 }
