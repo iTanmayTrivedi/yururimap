@@ -22,6 +22,7 @@ import { Route as LifeRouteImport } from './routes/life'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as CompanyRouteImport } from './routes/company'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TroubleMapRouteImport } from './routes/trouble_.map'
@@ -95,6 +96,11 @@ const AnnouncementsRoute = AnnouncementsRouteImport.update({
   path: '/announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ActivitiesRoute = ActivitiesRouteImport.update({
   id: '/activities',
   path: '/activities',
@@ -134,6 +140,7 @@ const ActivitiesNewRoute = ActivitiesNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activities': typeof ActivitiesRouteWithChildren
+  '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
   '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activities': typeof ActivitiesRouteWithChildren
+  '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
   '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activities': typeof ActivitiesRouteWithChildren
+  '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
   '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/activities'
+    | '/admin'
     | '/announcements'
     | '/company'
     | '/events'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/activities'
+    | '/admin'
     | '/announcements'
     | '/company'
     | '/events'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/activities'
+    | '/admin'
     | '/announcements'
     | '/company'
     | '/events'
@@ -270,6 +282,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivitiesRoute: typeof ActivitiesRouteWithChildren
+  AdminRoute: typeof AdminRoute
   AnnouncementsRoute: typeof AnnouncementsRoute
   CompanyRoute: typeof CompanyRoute
   EventsRoute: typeof EventsRoute
@@ -382,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnnouncementsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/activities': {
       id: '/activities'
       path: '/activities'
@@ -449,6 +469,7 @@ const ActivitiesRouteWithChildren = ActivitiesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivitiesRoute: ActivitiesRouteWithChildren,
+  AdminRoute: AdminRoute,
   AnnouncementsRoute: AnnouncementsRoute,
   CompanyRoute: CompanyRoute,
   EventsRoute: EventsRoute,
