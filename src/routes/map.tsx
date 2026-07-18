@@ -33,7 +33,7 @@ function MapPage() {
     queryKey: ["public-posts"],
     queryFn: async () => {
       const { data, error } = await supabase.from("posts")
-        .select("*")
+        .select("*").eq("hidden", false)
         .order("created_at", { ascending: false })
         .limit(2000);
       if (error) throw error;
