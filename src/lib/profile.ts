@@ -1,5 +1,5 @@
 // Optional local-only profile from initial setup: age group, gender, residential area,
-// location permission preference. All optional; never sent to a server.
+// location permission preference. All optional; never sent to a server without consent.
 export type Profile = {
   ageGroup?: string;
   gender?: string;
@@ -32,16 +32,20 @@ export function loadProfile(): Profile {
   try {
     const raw = localStorage.getItem(KEY);
     return raw ? (JSON.parse(raw) as Profile) : {};
-  } catch {
-    return {};
-  }
+  } catch { return {}; }
 }
 
 export function saveProfile(p: Profile) {
   if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(p));
-  } catch {
-    /* ignore */
-  }
+  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+
+/** Snapshot the (optional) demographic fields to send with a post/like for analytics. */
+export function demoSnapshot() {
+  const p = loadProfile();
+  return {
+    age_group: p.ageGroup ?? null,
+    gender: p.gender ?? null,
+    home_area: p.homeArea ?? null,
+  };
 }
