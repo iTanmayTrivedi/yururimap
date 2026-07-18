@@ -1,51 +1,125 @@
-# Plan: YururiMap "Trouble" surveys, RLS fix, initial setup
+# Minna no Komatta Map — Refocus & New Features
 
-You asked to prioritize (1) fixed survey feature and (2) shared-code bug fix. I'll also include the small extras (initial setup, home "Trouble" button, bottom-nav entry, trip log map default) since they're tightly coupled to the same UI.
+Pivot the app to focus on collecting local issues. The five-emotion features (Trip Log, Events, Connections) will be split into a separate future app; here we hide them behind "Under Maintenance" but keep tab slots as requested.
 
-## Priority 1 — Fixed Surveys ("困った")
+## Scope of this iteration
 
-### Data model (new tables)
-- `fixed_survey_categories` — seeded rows: Childcare, Roads & Traffic, Parks & Public Facilities, Schools, Workplace, Healthcare, Mental Health, Crime Prevention, Disaster Prevention, Elderly Care, Other (with slug, icon, order).
-- `fixed_surveys` — one active survey per category (title, description, category_id, updated_by, updated_at).
-- `fixed_survey_questions` — belongs to survey; fields: label, order, location_enabled.
-- `fixed_survey_submissions` — one row per user submit (session_id, survey_id, submitted_at).
-- `fixed_survey_answers` — per-question answer: submission_id, question_id, comment (max 150 chars/3 lines), lat, lng, location_source ('current'|'home'|'map'|null).
-- `admin_emails` — allowlist table with your two emails; used by `is_admin()` SECURITY DEFINER function.
+Priority 1 — Home & posts, Priority 2 — Community Activities, plus the three cross-cutting improvements: demographics capture, Me-too dedupe, and post reporting.
 
-### RLS
-- Categories/surveys/questions: `SELECT` open to `anon`+`authenticated`; INSERT/UPDATE/DELETE gated by `public.is_admin(auth.uid())`.
-- Submissions/answers: anyone (anon+auth) can INSERT; SELECT restricted (admin can read all; user can read own via session header).
+## 1. Home page (highest priority)
 
-### Admin auth
-- Requires Lovable Cloud auth for admins only. Regular users stay session-based (no login).
-- Sign-in page at `/admin/login` (email OTP). Only emails in `admin_emails` see the admin UI.
-- Admin surface at `/admin/surveys` — list categories, create/edit/delete surveys and questions (add/remove, toggle location, reorder).
+Redesigned home based on mockup ①:
+- Header: title "みんなの声Map / Minna no Koe Map" (keep current bilingual pattern), My Page + Feedback + Announcements chips.
+- 3 stat tiles: total posts / my "me-too" count / resolved count.
+- Big primary CTA: **困ったを投稿する** → `/post/request`.
+- Secondary row of 3 chips: 🩷 よかった投稿, 🟧 リクエスト (same as 困った), 🟩 活動を広める.
+- Embedded map preview showing all 3 post types with counts on pins → tap opens `/map`.
+- Bottom nav (6 slots, as requested): マップ / 暮らし / 会社 / 学校 / 取り組み / マイページ.
+  - 暮らし, 会社, 学校 = "Under Maintenance" stubs.
+  - 取り組み = Community Activities (new).
+  - マップ = the unified problem/happy/promote map.
 
-### User surface
-- Home: large red "困った / Trouble" button at the top → `/trouble`.
-- `/trouble`: numbered category list matching the mockup (1 子育て … 11 その他).
-- `/trouble/$slug`: full survey on one page. Each question shows label, 3-line comment box (150 char cap), and if location enabled: three chips (📍 Current / 🏠 Residential / 🗺 Map) with an inline Leaflet map to drop a pin. Single submit button at the bottom.
-- Bottom nav: replace/insert a "困った" tab pointing to `/trouble`.
+## 2. Post types (unchanged shapes, minor tweaks)
 
-### Initial setup (optional)
-- One-time modal on first visit stored in `localStorage` (`niko_profile`): age group, gender, residential area (free text + optional lat/lng via map), location permission toggle. All optional, skippable.
-- Residential area is reused as the "🏠 Residential" option in surveys; browser geolocation is used for "📍 Current".
+Keep the existing three post types (`happy` / `request` / `promote`). No structural change to the post form beyond bug-fix polish.
 
-## Priority 2 — Shared code bug (`event_sessions` RLS)
+## 3. Resolution reports (NEW)
 
-Current INSERT policy likely checks `admin_session_id = current_session_id()` but the header isn't sent on that call, or policy is missing entirely. Fix by:
-- Recreating INSERT policy `WITH CHECK (created_by = public.current_session_id())` scoped `TO anon, authenticated`.
-- Ensuring the client sends the `x-session-id` header (via a global fetch wrapper on the supabase client for the tables that need it) OR switching the check to allow inserts where `created_by` matches the value being written (server enforces via header). I'll verify current policy first and patch.
+New table `resolution_reports` linked to a `posts.id` (only `type='request'` posts can be resolved).
 
-## Extra — Trip log map default
-- `MapView` gets `worldCopyJump: true` and a lower `minZoom` (2). When there are no points, center on Japan (already default) with `zoom=5`; user can zoom out to see world.
+Fields: `related_post_id`, `description` (required), `photo_url` (required, 1 photo), `session_id`, `status` (pending|approved|rejected), `created_at`, `reviewed_at`, `reviewed_by`.
 
-## Not in this plan (per your note)
-- Otter redesign — skipped, current version stays.
+Flow:
+1. On a Request post's detail popup on the map, add "解決を報告する" button → `/resolve/$postId`.
+2. Form: shows the related post, textarea for resolution description (required), 1 photo (required), submit → status=pending.
+3. Admin page `/admin` gets a new "解決報告" tab listing pending resolutions with approve/reject.
+4. When approved, the parent post gets `resolved=true` (add column). Map renders resolved posts as pink hearts instead of the type color.
 
-## Technical notes
-- Uses TanStack Start server functions with `requireSupabaseAuth` for admin mutations; public reads via publishable client.
-- Admin allowlist via `is_admin()` SECURITY DEFINER + `admin_emails` table so you can add Tanmay's email without a code change.
-- All new `public` tables get explicit GRANTs per project rules.
+Tap a resolved pin → shows original problem + resolution photo/description + "ありがとう" counter (like button reused).
 
-Approve and I'll implement in this order: migration → admin auth + admin UI → user Trouble flow → event_sessions RLS fix → map default → initial setup modal.
+## 4. Community Activities (取り組み)
+
+New feature at `/activities`. Only "verified" submitters can post; verification is a flag `is_verified_poster` on a new `verified_posters` table keyed by `session_id`, seeded/managed by admin.
+
+New table `activities`:
+- `id`, `session_id`, `status` (draft|pending|approved|rejected)
+- `activity_type` enum: `meetup` | `join` | `create` | `space` | `protect` | `support`
+- `title` (required), `description` (required)
+- `scope` enum: `single` | `local` | `regional` | `national` | `global`
+- `place_label`, `lat`, `lng` (required only when scope in single/local)
+- `official_url`, `photo_url` (1 photo, required)
+- `created_at`, `updated_at`, `reviewed_at`
+
+Screens:
+- `/activities` — three horizontal carousels: 地方の取り組み / 全国の取り組み / 世界の取り組み (mockup ③ right). Filter chips by activity type. Map pin cluster at top.
+- `/activities/new` — form with all fields, "下書き保存" and "申請する" buttons. Blocked with a friendly message if the session isn't verified.
+- `/activities/$id` — detail with like button.
+- `/admin` gets a new "取り組み承認" tab (approve / reject).
+
+Likes reuse the same dedupe pattern as Me-too (see §6).
+
+## 5. Demographics capture (analytics)
+
+Extend existing `profile.ts` (age group, gender, home area) — already stored locally. When a user submits a post OR presses "Me too" / "Like", copy the current profile snapshot to the DB row:
+- Add `age_group`, `gender`, `home_area` columns to `posts`, `post_likes`, `activities`.
+- Also add these to a new `activity_likes` table.
+- All demographic fields are nullable; no auth required.
+
+Admin export: new admin action "CSVエクスポート" that pulls posts + likes with demographics as CSV via a server function returning a Response.
+
+## 6. Prevent duplicate Me-too / likes
+
+Add `UNIQUE (post_id, session_id)` on `post_likes` (if missing). Same for `activity_likes`. Client hides/toggles the button when the session has already voted; server rejects duplicates via the unique constraint.
+
+## 7. Report inappropriate posts
+
+New table `post_reports`:
+- `id`, `post_id` (nullable), `activity_id` (nullable), `resolution_id` (nullable), `session_id`, `reason` (short text), `created_at`, `status` (open|dismissed|actioned).
+
+UI: small "⚠ 報告" link inside every post popup / activity detail. Opens a small dialog with reason textarea. Admin gets a "通報" tab listing all reports with a "この投稿を削除" action that soft-deletes the target (add `hidden=true` column on posts/activities/resolutions; hidden rows are filtered from all public queries).
+
+## Technical details
+
+- All new tables in `public` with `GRANT`s + RLS.
+  - Inserts allowed to `anon` + `authenticated` (matches existing session-header pattern).
+  - Update/delete for non-admin only when `session_id = current_session_id()` (own drafts, own reports).
+  - Admin (existing `is_admin()`) can update/delete everything.
+- Photo uploads reuse existing `activity-photos` bucket with signed URLs.
+- Realtime not required — normal fetch-on-navigate is fine.
+- `/events`, `/share`, `/trip`, `/live/$code` stay as "Under Maintenance" or hidden from nav (already partially the case).
+
+## File plan
+
+New:
+- `src/routes/resolve.$postId.tsx`
+- `src/routes/activities.tsx`
+- `src/routes/activities.new.tsx`
+- `src/routes/activities.$id.tsx`
+- `src/routes/report.tsx` (or inline dialog component)
+- `src/components/ReportDialog.tsx`
+- `src/lib/activities.ts` (types + type meta)
+- `src/lib/resolutions.ts`
+
+Modified:
+- `src/routes/index.tsx` — new home layout per mockup ①.
+- `src/routes/map.tsx` — pink-heart rendering for resolved, popup with "解決を報告", "報告".
+- `src/routes/admin.tsx` — 3 new tabs: 解決報告 / 取り組み / 通報 + CSV export button.
+- `src/components/AppLayout.tsx` — bottom nav reorder to マップ / 暮らし / 会社 / 学校 / 取り組み / マイページ.
+- `src/lib/posts.ts` — Me-too dedupe helper reading `post_likes` for current session.
+- `src/routes/post.$type.tsx` — stamp demographics from `loadProfile()` on submit.
+- Existing "暮らし/会社/学校" routes → stub "準備中".
+
+## Migrations (one migration each, in order)
+
+1. Add `resolved`, `hidden` columns to `posts`; create `resolution_reports` with GRANTs, RLS, admin+own policies.
+2. Create `activities` + `activity_likes` + `verified_posters` with GRANTs, RLS, dedupe UNIQUE.
+3. Add demographics columns to `posts`, `post_likes`; add `hidden` to `activities`.
+4. Create `post_reports` with GRANTs, RLS.
+5. Add `UNIQUE (post_id, session_id)` on `post_likes` if not present.
+
+## Out of scope for this turn
+
+- Rendering the exact illustrated cards from mockups (we'll use icon + color chips, close in spirit but not custom illustrations).
+- Push notifications when a resolution is approved.
+- Verified poster self-signup (admin manually inserts session IDs for now).
+- Full separate "Kimochi Map" app split.
