@@ -27,6 +27,7 @@ function MapPage() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [reportId, setReportId] = useState<string | null>(null);
 
   const postsQ = useQuery({
     queryKey: ["public-posts"],
