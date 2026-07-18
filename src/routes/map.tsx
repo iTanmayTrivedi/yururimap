@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLang, t } from "@/lib/i18n";
 import { getSessionId } from "@/lib/session";
 import { POST_TYPES, POST_TYPE_LIST, type PostRow, type PostType } from "@/lib/posts";
-import { Heart, Loader2, MapPin, X, ExternalLink } from "lucide-react";
+import { Heart, Loader2, MapPin, X, ExternalLink, CheckCircle2, Flag } from "lucide-react";
+import { ReportDialog } from "@/components/ReportDialog";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
@@ -26,12 +27,13 @@ function MapPage() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [reportId, setReportId] = useState<string | null>(null);
 
   const postsQ = useQuery({
     queryKey: ["public-posts"],
     queryFn: async () => {
       const { data, error } = await supabase.from("posts")
-        .select("*")
+        .select("*").eq("hidden", false)
         .order("created_at", { ascending: false })
         .limit(2000);
       if (error) throw error;
@@ -114,8 +116,11 @@ function MapPage() {
           likeCount={likesQ.data?.get(selected.id) ?? 0}
           onLike={() => like(selected.id)}
           onClose={() => setSelectedId(null)}
+          onReport={() => setReportId(selected.id)}
         />
       )}
+      <ReportDialog open={!!reportId} onClose={() => setReportId(null)} target={{ post_id: reportId ?? undefined }} />
+
 
       {/* Legend */}
       <div className="grid grid-cols-3 gap-2">
@@ -175,14 +180,16 @@ function PostMap({ posts, counts, onSelect }:
     layer.clearLayers();
     posts.forEach((p) => {
       const meta = POST_TYPES[p.type];
-      const showCount = p.type === "request";
-      const count = (counts.get(p.id) ?? 0) + (showCount ? 1 : 0);
+      const isResolved = (p as PostRow & { resolved?: boolean }).resolved === true;
+      const showCount = p.type === "request" && !isResolved;
+      const count = (counts.get(p.id) ?? 0) + (p.type === "request" ? 1 : 0);
       const size = showCount ? Math.min(46, 26 + Math.log2(Math.max(1, count)) * 6) : 30;
-      const label = showCount ? String(count) : meta.emoji;
+      const bg = isResolved ? "#EC4899" : meta.color;
+      const label = isResolved ? "♥" : showCount ? String(count) : meta.emoji;
       const fontSize = showCount ? Math.max(11, size * 0.42) : 16;
       const html = `
         <div style="position:relative;width:${size}px;height:${size + 8}px;">
-          <div style="position:absolute;top:0;left:50%;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${meta.color};transform:translateX(-50%) rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.25);">
+          <div style="position:absolute;top:0;left:50%;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${bg};transform:translateX(-50%) rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.25);">
             <span style="transform:rotate(45deg);color:#fff;font-weight:800;font-size:${fontSize}px;font-family:inherit;line-height:1;">${label}</span>
           </div>
         </div>`;
@@ -196,10 +203,11 @@ function PostMap({ posts, counts, onSelect }:
   return <div ref={ref} style={{ height: 380, width: "100%" }} />;
 }
 
-function PostCard({ post, likeCount, onLike, onClose }:
-  { post: PostRow; likeCount: number; onLike: () => void; onClose: () => void }) {
+function PostCard({ post, likeCount, onLike, onClose, onReport }:
+  { post: PostRow; likeCount: number; onLike: () => void; onClose: () => void; onReport: () => void }) {
   const { lang } = useLang();
   const meta = POST_TYPES[post.type];
+  const isResolved = (post as PostRow & { resolved?: boolean }).resolved === true;
   return (
     <div className="rounded-2xl border bg-card p-4 shadow-md space-y-3"
       style={{ borderColor: `${meta.color}66` }}>
@@ -268,6 +276,19 @@ function PostCard({ post, likeCount, onLike, onClose }:
         {lang === "ja" ? meta.actionJa : meta.actionEn}
         <span className="ml-1 text-sm font-extrabold">{likeCount}{lang === "ja" ? "人" : ""}</span>
       </button>
+
+      <div className="flex gap-2">
+        {post.type === "request" && !isResolved && (
+          <Link to="/resolve/$postId" params={{ postId: post.id }}
+            className="flex-1 min-h-[40px] rounded-xl bg-pink-500 text-white font-bold text-xs inline-flex items-center justify-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5" /> {t(lang, "解決を報告する", "Report Resolution")}
+          </Link>
+        )}
+        <button onClick={onReport}
+          className="min-h-[40px] px-3 rounded-xl border border-border text-muted-foreground text-xs inline-flex items-center gap-1">
+          <Flag className="w-3 h-3" /> {t(lang, "報告", "Report")}
+        </button>
+      </div>
     </div>
   );
 }
