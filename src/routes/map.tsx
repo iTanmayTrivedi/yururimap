@@ -116,8 +116,11 @@ function MapPage() {
           likeCount={likesQ.data?.get(selected.id) ?? 0}
           onLike={() => like(selected.id)}
           onClose={() => setSelectedId(null)}
+          onReport={() => setReportId(selected.id)}
         />
       )}
+      <ReportDialog open={!!reportId} onClose={() => setReportId(null)} target={{ post_id: reportId ?? undefined }} />
+
 
       {/* Legend */}
       <div className="grid grid-cols-3 gap-2">
