@@ -103,10 +103,33 @@ function PickerMap({ lat, lng, onPickMap, onPickSearch, height }: {
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&accept-language=${lang}&q=${encodeURIComponent(q)}`;
-        const res = await fetch(url, { signal: ctrl.signal, headers: { "Accept": "application/json" } });
+        // Bias to Japan when the query contains CJK (Hiragana/Katakana/Kanji),
+        // and prefer Japanese-language names for higher accuracy on JP places.
+        const isJa = /[\u3040-\u30ff\u3400-\u9fff\uff66-\uff9f]/.test(q);
+        const acceptLang = isJa ? "ja,en;q=0.5" : `${lang},ja;q=0.5,en;q=0.3`;
+        const params = new URLSearchParams({
+          format: "json", addressdetails: "0", limit: "8",
+          "accept-language": acceptLang, q,
+        });
+        if (isJa) params.set("countrycodes", "jp");
+        const primary = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
+        const res = await fetch(primary, { signal: ctrl.signal, headers: { "Accept": "application/json" } });
         if (!res.ok) throw new Error("search failed");
-        const data = (await res.json()) as SearchHit[];
+        let data = (await res.json()) as SearchHit[];
+        // Fallback: if a Japanese query returned nothing (e.g. facility name only),
+        // retry via Photon (Komoot) which handles Japanese POIs well.
+        if (data.length === 0 && isJa) {
+          const photon = `https://photon.komoot.io/api/?lang=default&limit=8&q=${encodeURIComponent(q)}`;
+          const r2 = await fetch(photon, { signal: ctrl.signal });
+          if (r2.ok) {
+            const j = await r2.json() as { features?: Array<{ geometry: { coordinates: [number, number] }; properties: Record<string, string | undefined> }> };
+            data = (j.features ?? []).map((f) => {
+              const p = f.properties;
+              const name = [p.name, p.city, p.state, p.country].filter(Boolean).join(", ");
+              return { lat: String(f.geometry.coordinates[1]), lon: String(f.geometry.coordinates[0]), display_name: name };
+            });
+          }
+        }
         setResults(data); setOpen(true);
       } catch (e) {
         if ((e as Error).name !== "AbortError") setResults([]);
@@ -114,6 +137,7 @@ function PickerMap({ lat, lng, onPickMap, onPickSearch, height }: {
     }, 400);
     return () => { ctrl.abort(); clearTimeout(timer); };
   }, [query, lang]);
+
 
   function choose(h: SearchHit) {
     const la = parseFloat(h.lat); const ln = parseFloat(h.lon);
