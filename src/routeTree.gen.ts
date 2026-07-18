@@ -24,6 +24,7 @@ import { Route as CompanyRouteImport } from './routes/company'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TroubleMapRouteImport } from './routes/trouble_.map'
+import { Route as ResolvePostIdRouteImport } from './routes/resolve.$postId'
 import { Route as PostTypeRouteImport } from './routes/post.$type'
 import { Route as LiveCodeRouteImport } from './routes/live.$code'
 
@@ -102,6 +103,11 @@ const TroubleMapRoute = TroubleMapRouteImport.update({
   path: '/trouble/map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResolvePostIdRoute = ResolvePostIdRouteImport.update({
+  id: '/resolve/$postId',
+  path: '/resolve/$postId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PostTypeRoute = PostTypeRouteImport.update({
   id: '/post/$type',
   path: '/post/$type',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
+  '/resolve/$postId': typeof ResolvePostIdRoute
   '/trouble/map': typeof TroubleMapRoute
 }
 export interface FileRoutesByTo {
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
+  '/resolve/$postId': typeof ResolvePostIdRoute
   '/trouble/map': typeof TroubleMapRoute
 }
 export interface FileRoutesById {
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/trouble': typeof TroubleRoute
   '/live/$code': typeof LiveCodeRoute
   '/post/$type': typeof PostTypeRoute
+  '/resolve/$postId': typeof ResolvePostIdRoute
   '/trouble_/map': typeof TroubleMapRoute
 }
 export interface FileRouteTypes {
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/trouble'
     | '/live/$code'
     | '/post/$type'
+    | '/resolve/$postId'
     | '/trouble/map'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/trouble'
     | '/live/$code'
     | '/post/$type'
+    | '/resolve/$postId'
     | '/trouble/map'
   id:
     | '__root__'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/trouble'
     | '/live/$code'
     | '/post/$type'
+    | '/resolve/$postId'
     | '/trouble_/map'
   fileRoutesById: FileRoutesById
 }
@@ -248,6 +260,7 @@ export interface RootRouteChildren {
   TroubleRoute: typeof TroubleRoute
   LiveCodeRoute: typeof LiveCodeRoute
   PostTypeRoute: typeof PostTypeRoute
+  ResolvePostIdRoute: typeof ResolvePostIdRoute
   TroubleMapRoute: typeof TroubleMapRoute
 }
 
@@ -358,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TroubleMapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/resolve/$postId': {
+      id: '/resolve/$postId'
+      path: '/resolve/$postId'
+      fullPath: '/resolve/$postId'
+      preLoaderRoute: typeof ResolvePostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/post/$type': {
       id: '/post/$type'
       path: '/post/$type'
@@ -392,6 +412,7 @@ const rootRouteChildren: RootRouteChildren = {
   TroubleRoute: TroubleRoute,
   LiveCodeRoute: LiveCodeRoute,
   PostTypeRoute: PostTypeRoute,
+  ResolvePostIdRoute: ResolvePostIdRoute,
   TroubleMapRoute: TroubleMapRoute,
 }
 export const routeTree = rootRouteImport
