@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLang, t } from "@/lib/i18n";
 import { getSessionId } from "@/lib/session";
 import { POST_TYPES, POST_TYPE_LIST, type PostRow, type PostType } from "@/lib/posts";
-import { Heart, Loader2, MapPin, X, ExternalLink } from "lucide-react";
+import { Heart, Loader2, MapPin, X, ExternalLink, CheckCircle2, Flag } from "lucide-react";
+import { ReportDialog } from "@/components/ReportDialog";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
