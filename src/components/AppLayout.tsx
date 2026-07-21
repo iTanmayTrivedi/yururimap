@@ -1,15 +1,15 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Map as MapIcon, Home, Briefcase, GraduationCap, Sparkles, User, Languages } from "lucide-react";
+import { Map as MapIcon, Sparkles, Home, Users, Briefcase, GraduationCap, Languages } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
 
 const tabs = [
-  { to: "/map",         icon: MapIcon,        ja: "マップ",   en: "Map" },
-  { to: "/life",        icon: Home,           ja: "暮らし",   en: "Life" },
-  { to: "/company",     icon: Briefcase,      ja: "会社",     en: "Work" },
-  { to: "/school",      icon: GraduationCap,  ja: "学校",     en: "School" },
-  { to: "/activities",  icon: Sparkles,       ja: "取り組み", en: "Activities" },
-  { to: "/my",          icon: User,           ja: "マイページ", en: "My" },
+  { to: "/map",         icon: MapIcon,        ja: "困ったマップ",   en: "Problem Map", tag: null },
+  { to: "/activities",  icon: Sparkles,       ja: "活動マップ",     en: "Activity Map", tag: null },
+  { to: "/life",        icon: Home,           ja: "暮らし",         en: "Living",      tag: "準備中" },
+  { to: "/community",   icon: Users,          ja: "コミュニティ",   en: "Community",   tag: "準備中" },
+  { to: "/company",     icon: Briefcase,      ja: "ビジネス",       en: "Business",    tag: "準備中" },
+  { to: "/school",      icon: GraduationCap,  ja: "教育",           en: "Education",   tag: "準備中" },
 ] as const;
 
 export function AppLayout({ children }: { children?: ReactNode }) {
@@ -48,12 +48,17 @@ export function AppLayout({ children }: { children?: ReactNode }) {
                 <Link
                   key={t.to}
                   to={t.to}
-                  className="flex flex-col items-center justify-center py-2.5 select-none transition-colors text-muted-foreground"
-                  activeProps={{ className: "flex flex-col items-center justify-center py-2.5 select-none text-primary" }}
+                  className="flex flex-col items-center justify-center py-2 select-none transition-colors text-muted-foreground relative"
+                  activeProps={{ className: "flex flex-col items-center justify-center py-2 select-none text-primary relative" }}
                   activeOptions={{ exact: true }}
                 >
                   <Icon className="w-5 h-5" />
-                  <span className="text-[10px] mt-1 font-medium leading-none">{lang === "ja" ? t.ja : t.en}</span>
+                  <span className="text-[9px] mt-0.5 font-medium leading-none text-center">
+                    {lang === "ja" ? t.ja : t.en}
+                  </span>
+                  {t.tag && (
+                    <span className="text-[8px] text-muted-foreground/70 mt-0.5 leading-none">{t.tag}</span>
+                  )}
                 </Link>
               );
             })}
