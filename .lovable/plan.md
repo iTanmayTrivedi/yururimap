@@ -1,125 +1,107 @@
-# Minna no Komatta Map — Refocus & New Features
+# Plan: Minna no Komatta Map — Spec-Aligned Rebuild
 
-Pivot the app to focus on collecting local issues. The five-emotion features (Trip Log, Events, Connections) will be split into a separate future app; here we hide them behind "Under Maintenance" but keep tab slots as requested.
+Based on the attached spec sheets. Executes in 5 phases; each phase ships end-to-end before the next.
 
-## Scope of this iteration
+---
 
-Priority 1 — Home & posts, Priority 2 — Community Activities, plus the three cross-cutting improvements: demographics capture, Me-too dedupe, and post reporting.
+## Phase 1 — Data model (migration)
 
-## 1. Home page (highest priority)
+Add category + subtopic to posts and activities; add "affected_group" and thanks counter.
 
-Redesigned home based on mockup ①:
-- Header: title "みんなの声Map / Minna no Koe Map" (keep current bilingual pattern), My Page + Feedback + Announcements chips.
-- 3 stat tiles: total posts / my "me-too" count / resolved count.
-- Big primary CTA: **困ったを投稿する** → `/post/request`.
-- Secondary row of 3 chips: 🩷 よかった投稿, 🟧 リクエスト (same as 困った), 🟩 活動を広める.
-- Embedded map preview showing all 3 post types with counts on pins → tap opens `/map`.
-- Bottom nav (6 slots, as requested): マップ / 暮らし / 会社 / 学校 / 取り組み / マイページ.
-  - 暮らし, 会社, 学校 = "Under Maintenance" stubs.
-  - 取り組み = Community Activities (new).
-  - マップ = the unified problem/happy/promote map.
+**New columns**
+- `posts.category` — `kurashi | community | business | education`
+- `posts.subtopic` — string key (e.g. `childcare`, `medical`, `roads`, `parks`)
+- `posts.affected_group` — string (`kids`, `adults`, `seniors`, `disabled`, `everyone`, `foreigners`) — already exists; will be reused
+- `posts.thanks_count` — cached integer for resolved-heart "ありがとう" taps
+- `activities.category` — same enum
+- `activities.subtopic` — string key
+- New table `post_thanks (post_id, session_id, created_at)` — unique per session, powers the 「ありがとう！」 counter on resolved heart pins
 
-## 2. Post types (unchanged shapes, minor tweaks)
+**My Page**
+- Extend age groups to the 10-bucket set from the mockup (未就学, 小学生, 中学生, 高校生, 18–22, 23–40, 41–59, 60–69, 70–79, 80+, 回答しない)
+- Add `country_region` (string) alongside `home_area`
+- All stored client-side in `niko_profile` (already the pattern); demographics snapshot into posts/likes as today
 
-Keep the existing three post types (`happy` / `request` / `promote`). No structural change to the post form beyond bug-fix polish.
+**Grants + RLS**: keep current anon insert/select model; add matching policies for `post_thanks`.
 
-## 3. Resolution reports (NEW)
+---
 
-New table `resolution_reports` linked to a `posts.id` (only `type='request'` posts can be resolved).
+## Phase 2 — Category-first UI (Home + submission flow)
 
-Fields: `related_post_id`, `description` (required), `photo_url` (required, 1 photo), `session_id`, `status` (pending|approved|rejected), `created_at`, `reviewed_at`, `reviewed_by`.
+**Home (`/`)**
+- Header row: マイページ chip + ご意見 + お知らせ (kept, cleaned up)
+- Hero: 「どんなことに困っている？」
+- 4 large category tiles: 暮らし / コミュニティ / ビジネス / 教育 (colors from spec: green/orange/blue/purple)
+- Problem Map preview + stats footer (今日の投稿 / 私も困った / 解決済)
+- Bottom nav reordered: 困ったマップ / 活動マップ / 暮らし / コミュニティ / ビジネス / 教育 (last 4 marked 準備中 — they're deep links into filtered maps, not stubs)
 
-Flow:
-1. On a Request post's detail popup on the map, add "解決を報告する" button → `/resolve/$postId`.
-2. Form: shows the related post, textarea for resolution description (required), 1 photo (required), submit → status=pending.
-3. Admin page `/admin` gets a new "解決報告" tab listing pending resolutions with approve/reject.
-4. When approved, the parent post gets `resolved=true` (add column). Map renders resolved posts as pink hearts instead of the type color.
+**Submission flow (`/post/$category`)**
+- Step 1: subtopic list (per category, from spec):
+  - 暮らし: 子育て, 医療・健康, 介護・福祉, 住まい, 税金・手続き, 道路・交通, 公園・公共施設, 防災・防犯, 動物・環境, その他
+  - コミュニティ: 地域イベント, ボランティア・支援活動, 地域の活動・運営, 子育て支援・親の交流, 高齢者・見守り活動, 情報発信・広報, 仲間募集・コミュニティづくり, 資金・寄付の募集, その他
+  - ビジネス: 働き方・労働環境, 採用・人材, 経営・資金繰り, 職場環境・設備, 仕事の効率化・DX, 取引・営業, 法務・手続き・行政, その他 (no photo per spec)
+  - 教育: 学校の設備・環境, 学習・進路, 先生・人員, いじめ・不登校, 部活動・課外活動, 子育て・家庭学習, その他 (no photo per spec)
+- Step 2: form (photo where allowed → 何に困っていますか? → location → 誰が困っていますか?)
+- 「投稿する」 button colored per category
 
-Tap a resolved pin → shows original problem + resolution photo/description + "ありがとう" counter (like button reused).
+**Problem Map (`/map`)**
+- Category filter chips with counts
+- Pins colored by category; resolved posts show heart pin in category color
+- Popup: title, place, 私も困った (count), and on resolved posts the ありがとう button
 
-## 4. Community Activities (取り組み)
+**Activity Map (`/activities`)**
+- Same 4 categories; activity-post form gets category + subtopic + scope (一カ所/地域/全国/世界中/オンライン) matching spec radio card layout
+- Add 寄付先URL field
+- Draft save + admin approval kept
 
-New feature at `/activities`. Only "verified" submitters can post; verification is a flag `is_verified_poster` on a new `verified_posters` table keyed by `session_id`, seeded/managed by admin.
+---
 
-New table `activities`:
-- `id`, `session_id`, `status` (draft|pending|approved|rejected)
-- `activity_type` enum: `meetup` | `join` | `create` | `space` | `protect` | `support`
-- `title` (required), `description` (required)
-- `scope` enum: `single` | `local` | `regional` | `national` | `global`
-- `place_label`, `lat`, `lng` (required only when scope in single/local)
-- `official_url`, `photo_url` (1 photo, required)
-- `created_at`, `updated_at`, `reviewed_at`
+## Phase 3 — My Page redesign
 
-Screens:
-- `/activities` — three horizontal carousels: 地方の取り組み / 全国の取り組み / 世界の取り組み (mockup ③ right). Filter chips by activity type. Map pin cluster at top.
-- `/activities/new` — form with all fields, "下書き保存" and "申請する" buttons. Blocked with a friendly message if the session isn't verified.
-- `/activities/$id` — detail with like button.
-- `/admin` gets a new "取り組み承認" tab (approve / reject).
+- Location ON/OFF toggle (unchanged)
+- 年齢 grid with face icons (using existing `FaceIcon` component or lucide fallback) — the 10-bucket set
+- 性別 row: 女性 / 男性 / その他 / 回答しない
+- 普段住んでいる国・地域 (country/region text search — client-side filter over a curated JP prefectures + world regions list)
+- 居住地域 with 現在地を使う button
+- 利用規約・プライバシーポリシー link
+- Sticky 保存 button at bottom
 
-Likes reuse the same dedupe pattern as Me-too (see §6).
+---
 
-## 5. Demographics capture (analytics)
+## Phase 4 — Google Places Autocomplete
 
-Extend existing `profile.ts` (age group, gender, home area) — already stored locally. When a user submits a post OR presses "Me too" / "Like", copy the current profile snapshot to the DB row:
-- Add `age_group`, `gender`, `home_area` columns to `posts`, `post_likes`, `activities`.
-- Also add these to a new `activity_likes` table.
-- All demographic fields are nullable; no auth required.
+- Connect Google Maps connector (calls `standard_connectors--connect`)
+- Replace Nominatim/Photon in `LocationPicker.tsx` with Places API (New) via the connector gateway (server function `searchPlaces.functions.ts` using `X-Goog-FieldMask`)
+- Client uses `PlaceAutocompleteElement` via the browser key for the actual autocomplete widget; server route resolves place details when a suggestion is chosen
+- Applied everywhere a location is picked: /post/$category, /activities/new, /my
 
-Admin export: new admin action "CSVエクスポート" that pulls posts + likes with demographics as CSV via a server function returning a Response.
+---
 
-## 6. Prevent duplicate Me-too / likes
+## Phase 5 — PWA auto-update
 
-Add `UNIQUE (post_id, session_id)` on `post_likes` (if missing). Same for `activity_likes`. Client hides/toggles the button when the session has already voted; server rejects duplicates via the unique constraint.
+- Add `vite-plugin-pwa` with `registerType: "autoUpdate"`, `generateSW`, guarded registration wrapper (skip in preview/iframe/dev, support `?sw=off` kill-switch)
+- HTML: `NetworkFirst`; hashed assets: `CacheFirst`
+- Existing `public/sw.js` becomes the kill-switch worker for one release then is replaced by generated SW
+- Users get latest version on next visit without reinstalling
 
-## 7. Report inappropriate posts
+---
 
-New table `post_reports`:
-- `id`, `post_id` (nullable), `activity_id` (nullable), `resolution_id` (nullable), `session_id`, `reason` (short text), `created_at`, `status` (open|dismissed|actioned).
+## Out of scope (per your answer)
 
-UI: small "⚠ 報告" link inside every post popup / activity detail. Opens a small dialog with reason textarea. Admin gets a "通報" tab listing all reports with a "この投稿を削除" action that soft-deletes the target (add `hidden=true` column on posts/activities/resolutions; hidden rows are filtered from all public queries).
+- Old beta URL (yururmap.lovable.app) left alone
+- Statistics/CSV export already shipped; will just extend the CSV with new category/subtopic columns
+- Life/Company/School standalone routes: replaced by the 4 category deep-links on the map
 
-## Technical details
+---
 
-- All new tables in `public` with `GRANT`s + RLS.
-  - Inserts allowed to `anon` + `authenticated` (matches existing session-header pattern).
-  - Update/delete for non-admin only when `session_id = current_session_id()` (own drafts, own reports).
-  - Admin (existing `is_admin()`) can update/delete everything.
-- Photo uploads reuse existing `activity-photos` bucket with signed URLs.
-- Realtime not required — normal fetch-on-navigate is fine.
-- `/events`, `/share`, `/trip`, `/live/$code` stay as "Under Maintenance" or hidden from nav (already partially the case).
+## Technical notes
 
-## File plan
+- Migration is one file; grants + policies included per public-schema rule
+- Category enum lives in `src/lib/categories.ts` (new); subtopic maps colocated
+- Existing `posts.type` (happy/request/promote) kept in DB but hidden in UI; all new posts default `type = 'request'`
+- Google Maps connector: server-side calls via gateway for details/geocode; browser key for the autocomplete element
+- PWA registration wrapper in `src/lib/pwa.ts`; gated per skill rules
 
-New:
-- `src/routes/resolve.$postId.tsx`
-- `src/routes/activities.tsx`
-- `src/routes/activities.new.tsx`
-- `src/routes/activities.$id.tsx`
-- `src/routes/report.tsx` (or inline dialog component)
-- `src/components/ReportDialog.tsx`
-- `src/lib/activities.ts` (types + type meta)
-- `src/lib/resolutions.ts`
+---
 
-Modified:
-- `src/routes/index.tsx` — new home layout per mockup ①.
-- `src/routes/map.tsx` — pink-heart rendering for resolved, popup with "解決を報告", "報告".
-- `src/routes/admin.tsx` — 3 new tabs: 解決報告 / 取り組み / 通報 + CSV export button.
-- `src/components/AppLayout.tsx` — bottom nav reorder to マップ / 暮らし / 会社 / 学校 / 取り組み / マイページ.
-- `src/lib/posts.ts` — Me-too dedupe helper reading `post_likes` for current session.
-- `src/routes/post.$type.tsx` — stamp demographics from `loadProfile()` on submit.
-- Existing "暮らし/会社/学校" routes → stub "準備中".
-
-## Migrations (one migration each, in order)
-
-1. Add `resolved`, `hidden` columns to `posts`; create `resolution_reports` with GRANTs, RLS, admin+own policies.
-2. Create `activities` + `activity_likes` + `verified_posters` with GRANTs, RLS, dedupe UNIQUE.
-3. Add demographics columns to `posts`, `post_likes`; add `hidden` to `activities`.
-4. Create `post_reports` with GRANTs, RLS.
-5. Add `UNIQUE (post_id, session_id)` on `post_likes` if not present.
-
-## Out of scope for this turn
-
-- Rendering the exact illustrated cards from mockups (we'll use icon + color chips, close in spirit but not custom illustrations).
-- Push notifications when a resolution is approved.
-- Verified poster self-signup (admin manually inserts session IDs for now).
-- Full separate "Kimochi Map" app split.
+Approve to proceed with Phase 1 (migration).

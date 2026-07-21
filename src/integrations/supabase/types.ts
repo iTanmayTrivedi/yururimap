@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           activity_type: string
           age_group: string | null
+          category: string | null
           created_at: string
           description: string
           gender: string | null
@@ -33,12 +34,14 @@ export type Database = {
           scope: string
           session_id: string
           status: string
+          subtopic: string | null
           title: string
           updated_at: string
         }
         Insert: {
           activity_type: string
           age_group?: string | null
+          category?: string | null
           created_at?: string
           description: string
           gender?: string | null
@@ -54,12 +57,14 @@ export type Database = {
           scope?: string
           session_id: string
           status?: string
+          subtopic?: string | null
           title: string
           updated_at?: string
         }
         Update: {
           activity_type?: string
           age_group?: string | null
+          category?: string | null
           created_at?: string
           description?: string
           gender?: string | null
@@ -75,6 +80,7 @@ export type Database = {
           scope?: string
           session_id?: string
           status?: string
+          subtopic?: string | null
           title?: string
           updated_at?: string
         }
@@ -654,10 +660,49 @@ export type Database = {
           },
         ]
       }
+      post_thanks: {
+        Row: {
+          age_group: string | null
+          created_at: string
+          gender: string | null
+          home_area: string | null
+          id: string
+          post_id: string
+          session_id: string
+        }
+        Insert: {
+          age_group?: string | null
+          created_at?: string
+          gender?: string | null
+          home_area?: string | null
+          id?: string
+          post_id: string
+          session_id: string
+        }
+        Update: {
+          age_group?: string | null
+          created_at?: string
+          gender?: string | null
+          home_area?: string | null
+          id?: string
+          post_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_thanks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           affected_group: string | null
           age_group: string | null
+          category: string | null
           created_at: string
           description: string
           gender: string | null
@@ -671,6 +716,8 @@ export type Database = {
           place_label: string | null
           resolved: boolean
           session_id: string
+          subtopic: string | null
+          thanks_count: number
           title: string | null
           type: Database["public"]["Enums"]["post_type"]
           updated_at: string
@@ -680,6 +727,7 @@ export type Database = {
         Insert: {
           affected_group?: string | null
           age_group?: string | null
+          category?: string | null
           created_at?: string
           description: string
           gender?: string | null
@@ -693,6 +741,8 @@ export type Database = {
           place_label?: string | null
           resolved?: boolean
           session_id: string
+          subtopic?: string | null
+          thanks_count?: number
           title?: string | null
           type: Database["public"]["Enums"]["post_type"]
           updated_at?: string
@@ -702,6 +752,7 @@ export type Database = {
         Update: {
           affected_group?: string | null
           age_group?: string | null
+          category?: string | null
           created_at?: string
           description?: string
           gender?: string | null
@@ -715,6 +766,8 @@ export type Database = {
           place_label?: string | null
           resolved?: boolean
           session_id?: string
+          subtopic?: string | null
+          thanks_count?: number
           title?: string | null
           type?: Database["public"]["Enums"]["post_type"]
           updated_at?: string

@@ -21,13 +21,14 @@ import { Route as MapRouteImport } from './routes/map'
 import { Route as LifeRouteImport } from './routes/life'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as CompanyRouteImport } from './routes/company'
+import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TroubleMapRouteImport } from './routes/trouble_.map'
 import { Route as ResolvePostIdRouteImport } from './routes/resolve.$postId'
-import { Route as PostTypeRouteImport } from './routes/post.$type'
+import { Route as PostCategoryRouteImport } from './routes/post.$category'
 import { Route as LiveCodeRouteImport } from './routes/live.$code'
 import { Route as ActivitiesNewRouteImport } from './routes/activities.new'
 
@@ -91,6 +92,11 @@ const CompanyRoute = CompanyRouteImport.update({
   path: '/company',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnnouncementsRoute = AnnouncementsRouteImport.update({
   id: '/announcements',
   path: '/announcements',
@@ -121,9 +127,9 @@ const ResolvePostIdRoute = ResolvePostIdRouteImport.update({
   path: '/resolve/$postId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PostTypeRoute = PostTypeRouteImport.update({
-  id: '/post/$type',
-  path: '/post/$type',
+const PostCategoryRoute = PostCategoryRouteImport.update({
+  id: '/post/$category',
+  path: '/post/$category',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LiveCodeRoute = LiveCodeRouteImport.update({
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/activities': typeof ActivitiesRouteWithChildren
   '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
+  '/community': typeof CommunityRoute
   '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
   '/life': typeof LifeRoute
@@ -156,7 +163,7 @@ export interface FileRoutesByFullPath {
   '/trouble': typeof TroubleRoute
   '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
-  '/post/$type': typeof PostTypeRoute
+  '/post/$category': typeof PostCategoryRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
   '/trouble/map': typeof TroubleMapRoute
 }
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/activities': typeof ActivitiesRouteWithChildren
   '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
+  '/community': typeof CommunityRoute
   '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
   '/life': typeof LifeRoute
@@ -179,7 +187,7 @@ export interface FileRoutesByTo {
   '/trouble': typeof TroubleRoute
   '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
-  '/post/$type': typeof PostTypeRoute
+  '/post/$category': typeof PostCategoryRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
   '/trouble/map': typeof TroubleMapRoute
 }
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/activities': typeof ActivitiesRouteWithChildren
   '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
+  '/community': typeof CommunityRoute
   '/company': typeof CompanyRoute
   '/events': typeof EventsRoute
   '/life': typeof LifeRoute
@@ -203,7 +212,7 @@ export interface FileRoutesById {
   '/trouble': typeof TroubleRoute
   '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
-  '/post/$type': typeof PostTypeRoute
+  '/post/$category': typeof PostCategoryRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
   '/trouble_/map': typeof TroubleMapRoute
 }
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/activities'
     | '/admin'
     | '/announcements'
+    | '/community'
     | '/company'
     | '/events'
     | '/life'
@@ -228,7 +238,7 @@ export interface FileRouteTypes {
     | '/trouble'
     | '/activities/new'
     | '/live/$code'
-    | '/post/$type'
+    | '/post/$category'
     | '/resolve/$postId'
     | '/trouble/map'
   fileRoutesByTo: FileRoutesByTo
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/activities'
     | '/admin'
     | '/announcements'
+    | '/community'
     | '/company'
     | '/events'
     | '/life'
@@ -251,7 +262,7 @@ export interface FileRouteTypes {
     | '/trouble'
     | '/activities/new'
     | '/live/$code'
-    | '/post/$type'
+    | '/post/$category'
     | '/resolve/$postId'
     | '/trouble/map'
   id:
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/activities'
     | '/admin'
     | '/announcements'
+    | '/community'
     | '/company'
     | '/events'
     | '/life'
@@ -274,7 +286,7 @@ export interface FileRouteTypes {
     | '/trouble'
     | '/activities/new'
     | '/live/$code'
-    | '/post/$type'
+    | '/post/$category'
     | '/resolve/$postId'
     | '/trouble_/map'
   fileRoutesById: FileRoutesById
@@ -284,6 +296,7 @@ export interface RootRouteChildren {
   ActivitiesRoute: typeof ActivitiesRouteWithChildren
   AdminRoute: typeof AdminRoute
   AnnouncementsRoute: typeof AnnouncementsRoute
+  CommunityRoute: typeof CommunityRoute
   CompanyRoute: typeof CompanyRoute
   EventsRoute: typeof EventsRoute
   LifeRoute: typeof LifeRoute
@@ -297,7 +310,7 @@ export interface RootRouteChildren {
   TripRoute: typeof TripRoute
   TroubleRoute: typeof TroubleRoute
   LiveCodeRoute: typeof LiveCodeRoute
-  PostTypeRoute: typeof PostTypeRoute
+  PostCategoryRoute: typeof PostCategoryRoute
   ResolvePostIdRoute: typeof ResolvePostIdRoute
   TroubleMapRoute: typeof TroubleMapRoute
 }
@@ -388,6 +401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompanyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/announcements': {
       id: '/announcements'
       path: '/announcements'
@@ -430,11 +450,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResolvePostIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/post/$type': {
-      id: '/post/$type'
-      path: '/post/$type'
-      fullPath: '/post/$type'
-      preLoaderRoute: typeof PostTypeRouteImport
+    '/post/$category': {
+      id: '/post/$category'
+      path: '/post/$category'
+      fullPath: '/post/$category'
+      preLoaderRoute: typeof PostCategoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/live/$code': {
@@ -471,6 +491,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActivitiesRoute: ActivitiesRouteWithChildren,
   AdminRoute: AdminRoute,
   AnnouncementsRoute: AnnouncementsRoute,
+  CommunityRoute: CommunityRoute,
   CompanyRoute: CompanyRoute,
   EventsRoute: EventsRoute,
   LifeRoute: LifeRoute,
@@ -484,7 +505,7 @@ const rootRouteChildren: RootRouteChildren = {
   TripRoute: TripRoute,
   TroubleRoute: TroubleRoute,
   LiveCodeRoute: LiveCodeRoute,
-  PostTypeRoute: PostTypeRoute,
+  PostCategoryRoute: PostCategoryRoute,
   ResolvePostIdRoute: ResolvePostIdRoute,
   TroubleMapRoute: TroubleMapRoute,
 }

@@ -6,21 +6,35 @@ import L from "leaflet";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang, t } from "@/lib/i18n";
 import { getSessionId } from "@/lib/session";
-import { POST_TYPES, POST_TYPE_LIST, type PostRow, type PostType } from "@/lib/posts";
-import { Heart, Loader2, MapPin, X, ExternalLink, CheckCircle2, Flag } from "lucide-react";
+import { POST_TYPES, type PostRow } from "@/lib/posts";
+import { CATEGORIES, CATEGORY_LIST, categoryOf, type CategoryId } from "@/lib/categories";
+import { Heart, Loader2, MapPin, X, ExternalLink, CheckCircle2, Flag, ThumbsUp } from "lucide-react";
 import { ReportDialog } from "@/components/ReportDialog";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
     meta: [
-      { title: "みんなの投稿マップ / Public Map — YururiMap" },
-      { name: "description", content: "Everyone's Happy posts, Requests, and Promoted activities on one map." },
+      { title: "困ったマップ / Problem Map — YururiMap" },
+      { name: "description", content: "See local problems by category on the map." },
     ],
   }),
   component: MapPage,
 });
 
-type FilterKey = "all" | PostType;
+type FilterKey = "all" | CategoryId;
+
+type PostRowExt = PostRow & {
+  resolved?: boolean;
+  category?: string | null;
+  subtopic?: string | null;
+  thanks_count?: number;
+};
+
+function pinColorFor(p: PostRowExt): string {
+  const cat = categoryOf(p.category ?? null);
+  if (cat) return cat.color;
+  return POST_TYPES[p.type].color;
+}
 
 function MapPage() {
   const { lang } = useLang();
@@ -37,7 +51,7 @@ function MapPage() {
         .order("created_at", { ascending: false })
         .limit(2000);
       if (error) throw error;
-      return (data ?? []) as PostRow[];
+      return (data ?? []) as PostRowExt[];
     },
     refetchInterval: 30000,
   });
@@ -58,13 +72,13 @@ function MapPage() {
   });
 
   const posts = (postsQ.data ?? []).filter((p) => p.lat != null && p.lng != null);
-  const visible = filter === "all" ? posts : posts.filter((p) => p.type === filter);
+  const visible = filter === "all" ? posts : posts.filter((p) => p.category === filter);
   const selected = useMemo(() => posts.find((p) => p.id === selectedId) ?? null, [selectedId, posts]);
-  const counts = {
-    happy: posts.filter((p) => p.type === "happy").length,
-    request: posts.filter((p) => p.type === "request").length,
-    promote: posts.filter((p) => p.type === "promote").length,
-  };
+  const catCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const p of posts) if (p.category) m[p.category] = (m[p.category] ?? 0) + 1;
+    return m;
+  }, [posts]);
 
   async function like(postId: string) {
     try {
@@ -75,28 +89,42 @@ function MapPage() {
         if (error.code === "23505") { toast.info(t(lang, "すでに反応しました", "You already reacted")); return; }
         throw error;
       }
-      toast.success(t(lang, "ありがとう！", "Thanks!"));
+      toast.success(t(lang, "私も困った！", "Me too!"));
       qc.invalidateQueries({ queryKey: ["post-likes-counts"] });
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  async function thanks(postId: string) {
+    try {
+      const sid = getSessionId();
+      const { demoSnapshot } = await import("@/lib/profile");
+      const { error } = await supabase.from("post_thanks").insert({ post_id: postId, session_id: sid, ...demoSnapshot() });
+      if (error) {
+        if (error.code === "23505") { toast.info(t(lang, "すでにありがとうを送りました", "You already thanked")); return; }
+        throw error;
+      }
+      toast.success(t(lang, "ありがとう！", "Thanks!"));
+      qc.invalidateQueries({ queryKey: ["public-posts"] });
     } catch (e) { toast.error((e as Error).message); }
   }
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">{t(lang, "みんなの投稿マップ", "Public Map")}</h2>
-        <div className="text-[10px] text-muted-foreground">{t(lang, "ピンをタップして内容を確認", "Tap a pin for details")}</div>
+        <h2 className="text-lg font-bold">{t(lang, "困ったマップ", "Problem Map")}</h2>
+        <div className="text-[10px] text-muted-foreground">{t(lang, "ピンをタップして詳細を見る", "Tap a pin for details")}</div>
       </div>
 
-      {/* Filter chips */}
+      {/* Category filter chips */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
         <Chip active={filter === "all"} onClick={() => setFilter("all")} label={t(lang, "すべて", "All")} sub={String(posts.length)} color="#6B7280" />
-        {POST_TYPE_LIST.map((p) => (
-          <Chip key={p.type}
-            active={filter === p.type}
-            onClick={() => setFilter(p.type)}
-            label={`${p.emoji} ${lang === "ja" ? p.ja : p.en}`}
-            sub={String(counts[p.type])}
-            color={p.color} />
+        {CATEGORY_LIST.map((c) => (
+          <Chip key={c.id}
+            active={filter === c.id}
+            onClick={() => setFilter(c.id)}
+            label={`${c.emoji} ${lang === "ja" ? c.ja : c.en}`}
+            sub={String(catCounts[c.id] ?? 0)}
+            color={c.color} />
         ))}
       </div>
 
@@ -115,20 +143,20 @@ function MapPage() {
           post={selected}
           likeCount={likesQ.data?.get(selected.id) ?? 0}
           onLike={() => like(selected.id)}
+          onThanks={() => thanks(selected.id)}
           onClose={() => setSelectedId(null)}
           onReport={() => setReportId(selected.id)}
         />
       )}
       <ReportDialog open={!!reportId} onClose={() => setReportId(null)} target={{ post_id: reportId ?? undefined }} />
 
-
-      {/* Legend */}
-      <div className="grid grid-cols-3 gap-2">
-        {POST_TYPE_LIST.map((p) => (
-          <Link key={p.type} to={`/post/${p.type}` as "/post/happy"}
+      {/* Legend / quick post links */}
+      <div className="grid grid-cols-2 gap-2">
+        {CATEGORY_LIST.map((c) => (
+          <Link key={c.id} to="/post/$category" params={{ category: c.id }}
             className="rounded-xl border p-2 text-center text-[11px] font-semibold shadow-sm"
-            style={{ backgroundColor: p.soft, borderColor: `${p.color}55`, color: p.color }}>
-            {p.emoji} {lang === "ja" ? p.ja : p.en}
+            style={{ backgroundColor: c.soft, borderColor: `${c.color}55`, color: c.color }}>
+            {c.emoji} {lang === "ja" ? c.ja : c.en}
             <div className="text-[9px] font-normal opacity-80">{t(lang, "投稿する", "Post")}</div>
           </Link>
         ))}
@@ -152,7 +180,7 @@ function Chip({ active, onClick, label, sub, color }:
 }
 
 function PostMap({ posts, counts, onSelect }:
-  { posts: PostRow[]; counts: Map<string, number>; onSelect: (id: string) => void }) {
+  { posts: PostRowExt[]; counts: Map<string, number>; onSelect: (id: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
@@ -161,7 +189,6 @@ function PostMap({ posts, counts, onSelect }:
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
-    // Default view: Japan; can zoom out to world.
     const m = L.map(ref.current, {
       center: [36.5, 138.0], zoom: 5, minZoom: 2, maxZoom: 19, worldCopyJump: true,
     });
@@ -179,14 +206,12 @@ function PostMap({ posts, counts, onSelect }:
     if (!m || !layer) return;
     layer.clearLayers();
     posts.forEach((p) => {
-      const meta = POST_TYPES[p.type];
-      const isResolved = (p as PostRow & { resolved?: boolean }).resolved === true;
-      const showCount = p.type === "request" && !isResolved;
-      const count = (counts.get(p.id) ?? 0) + (p.type === "request" ? 1 : 0);
-      const size = showCount ? Math.min(46, 26 + Math.log2(Math.max(1, count)) * 6) : 30;
-      const bg = isResolved ? "#EC4899" : meta.color;
-      const label = isResolved ? "♥" : showCount ? String(count) : meta.emoji;
-      const fontSize = showCount ? Math.max(11, size * 0.42) : 16;
+      const bg = pinColorFor(p);
+      const isResolved = p.resolved === true;
+      const count = (counts.get(p.id) ?? 0) + 1;
+      const size = 32;
+      const label = isResolved ? "♥" : String(count);
+      const fontSize = 13;
       const html = `
         <div style="position:relative;width:${size}px;height:${size + 8}px;">
           <div style="position:absolute;top:0;left:50%;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${bg};transform:translateX(-50%) rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.25);">
@@ -203,26 +228,21 @@ function PostMap({ posts, counts, onSelect }:
   return <div ref={ref} style={{ height: 380, width: "100%" }} />;
 }
 
-function PostCard({ post, likeCount, onLike, onClose, onReport }:
-  { post: PostRow; likeCount: number; onLike: () => void; onClose: () => void; onReport: () => void }) {
+function PostCard({ post, likeCount, onLike, onThanks, onClose, onReport }:
+  { post: PostRowExt; likeCount: number; onLike: () => void; onThanks: () => void; onClose: () => void; onReport: () => void }) {
   const { lang } = useLang();
-  const meta = POST_TYPES[post.type];
-  const isResolved = (post as PostRow & { resolved?: boolean }).resolved === true;
+  const cat = categoryOf(post.category ?? null);
+  const color = cat?.color ?? POST_TYPES[post.type].color;
+  const soft = cat?.soft ?? POST_TYPES[post.type].soft;
+  const label = cat ? (lang === "ja" ? cat.ja : cat.en)
+                    : (lang === "ja" ? POST_TYPES[post.type].ja : POST_TYPES[post.type].en);
+  const isResolved = post.resolved === true;
   return (
-    <div className="rounded-2xl border bg-card p-4 shadow-md space-y-3"
-      style={{ borderColor: `${meta.color}66` }}>
+    <div className="rounded-2xl border bg-card p-4 shadow-md space-y-3" style={{ borderColor: `${color}66` }}>
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="w-8 h-8 rounded-full flex items-center justify-center text-lg shrink-0"
-            style={{ backgroundColor: meta.soft, border: `2px solid ${meta.color}` }}>
-            {meta.emoji}
-          </span>
-          <div className="min-w-0">
-            <div className="text-[11px] font-bold" style={{ color: meta.color }}>
-              {lang === "ja" ? meta.ja : meta.en}
-            </div>
-            <div className="text-sm font-bold truncate">{post.title ?? post.place_label ?? (lang === "ja" ? "投稿" : "Post")}</div>
-          </div>
+        <div className="min-w-0">
+          <div className="text-[11px] font-bold" style={{ color }}>{label}</div>
+          <div className="text-sm font-bold truncate">{post.title ?? post.place_label ?? (lang === "ja" ? "投稿" : "Post")}</div>
         </div>
         <button onClick={onClose} className="text-muted-foreground p-1"><X className="w-4 h-4" /></button>
       </div>
@@ -237,48 +257,39 @@ function PostCard({ post, likeCount, onLike, onClose, onReport }:
         </div>
       )}
 
-      <div>
-        <div className="text-[10px] font-semibold mb-1" style={{ color: meta.color }}>
-          {post.type === "request" ? t(lang, "リクエスト内容", "Request")
-            : post.type === "promote" ? t(lang, "活動内容", "Activity")
-            : t(lang, "内容", "Content")}
-        </div>
-        <p className="rounded-xl px-3 py-2 text-sm whitespace-pre-wrap" style={{ backgroundColor: meta.soft }}>
-          {post.description}
-        </p>
-      </div>
+      <p className="rounded-xl px-3 py-2 text-sm whitespace-pre-wrap" style={{ backgroundColor: soft }}>
+        {post.description}
+      </p>
 
-      {post.why_needed && (
-        <div>
-          <div className="text-[10px] font-semibold mb-1" style={{ color: meta.color }}>
-            {t(lang, "なぜリクエスト？", "Why?")}
-          </div>
-          <p className="rounded-xl px-3 py-2 text-sm whitespace-pre-wrap" style={{ backgroundColor: meta.soft }}>
-            {post.why_needed}
-          </p>
-        </div>
-      )}
-
-      {post.when_text && (
-        <div className="text-xs"><span className="font-semibold">{t(lang, "いつ", "When")}: </span>{post.when_text}</div>
-      )}
       {post.official_url && (
         <a href={post.official_url} target="_blank" rel="noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-emerald-700 underline">
+          className="inline-flex items-center gap-1 text-xs underline" style={{ color }}>
           <ExternalLink className="w-3 h-3" /> {post.official_url}
         </a>
       )}
 
-      <button onClick={onLike}
-        className="w-full min-h-[48px] rounded-2xl text-white font-bold shadow-sm inline-flex items-center justify-center gap-2"
-        style={{ backgroundColor: meta.color }}>
-        <Heart className="w-4 h-4" />
-        {lang === "ja" ? meta.actionJa : meta.actionEn}
-        <span className="ml-1 text-sm font-extrabold">{likeCount}{lang === "ja" ? "人" : ""}</span>
-      </button>
+      {!isResolved && (
+        <button onClick={onLike}
+          className="w-full min-h-[48px] rounded-2xl text-white font-bold shadow-sm inline-flex items-center justify-center gap-2"
+          style={{ backgroundColor: color }}>
+          <ThumbsUp className="w-4 h-4" />
+          {t(lang, "私も困った", "Me too")}
+          <span className="ml-1 text-sm font-extrabold">{likeCount}</span>
+        </button>
+      )}
+
+      {isResolved && (
+        <button onClick={onThanks}
+          className="w-full min-h-[48px] rounded-2xl text-white font-bold shadow-sm inline-flex items-center justify-center gap-2"
+          style={{ backgroundColor: "#EC4899" }}>
+          <Heart className="w-4 h-4" />
+          {t(lang, "ありがとう！", "Thank you!")}
+          <span className="ml-1 text-sm font-extrabold">{post.thanks_count ?? 0}</span>
+        </button>
+      )}
 
       <div className="flex gap-2">
-        {post.type === "request" && !isResolved && (
+        {!isResolved && (
           <Link to="/resolve/$postId" params={{ postId: post.id }}
             className="flex-1 min-h-[40px] rounded-xl bg-pink-500 text-white font-bold text-xs inline-flex items-center justify-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5" /> {t(lang, "解決を報告する", "Report Resolution")}
