@@ -15,6 +15,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as ShareRouteImport } from './routes/share'
 import { Route as SchoolRouteImport } from './routes/school'
+import { Route as PostRouteImport } from './routes/post'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as MoreRouteImport } from './routes/more'
 import { Route as MapRouteImport } from './routes/map'
@@ -60,6 +61,11 @@ const ShareRoute = ShareRouteImport.update({
 const SchoolRoute = SchoolRouteImport.update({
   id: '/school',
   path: '/school',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostRoute = PostRouteImport.update({
+  id: '/post',
+  path: '/post',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyRoute = MyRouteImport.update({
@@ -128,9 +134,9 @@ const ResolvePostIdRoute = ResolvePostIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PostCategoryRoute = PostCategoryRouteImport.update({
-  id: '/post/$category',
-  path: '/post/$category',
-  getParentRoute: () => rootRouteImport,
+  id: '/$category',
+  path: '/$category',
+  getParentRoute: () => PostRoute,
 } as any)
 const LiveCodeRoute = LiveCodeRouteImport.update({
   id: '/live/$code',
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/map': typeof MapRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
+  '/post': typeof PostRouteWithChildren
   '/school': typeof SchoolRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/map': typeof MapRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
+  '/post': typeof PostRouteWithChildren
   '/school': typeof SchoolRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/map': typeof MapRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
+  '/post': typeof PostRouteWithChildren
   '/school': typeof SchoolRoute
   '/share': typeof ShareRoute
   '/stats': typeof StatsRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/more'
     | '/my'
+    | '/post'
     | '/school'
     | '/share'
     | '/stats'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/more'
     | '/my'
+    | '/post'
     | '/school'
     | '/share'
     | '/stats'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/more'
     | '/my'
+    | '/post'
     | '/school'
     | '/share'
     | '/stats'
@@ -303,6 +315,7 @@ export interface RootRouteChildren {
   MapRoute: typeof MapRoute
   MoreRoute: typeof MoreRoute
   MyRoute: typeof MyRoute
+  PostRoute: typeof PostRouteWithChildren
   SchoolRoute: typeof SchoolRoute
   ShareRoute: typeof ShareRoute
   StatsRoute: typeof StatsRoute
@@ -310,7 +323,6 @@ export interface RootRouteChildren {
   TripRoute: typeof TripRoute
   TroubleRoute: typeof TroubleRoute
   LiveCodeRoute: typeof LiveCodeRoute
-  PostCategoryRoute: typeof PostCategoryRoute
   ResolvePostIdRoute: typeof ResolvePostIdRoute
   TroubleMapRoute: typeof TroubleMapRoute
 }
@@ -357,6 +369,13 @@ declare module '@tanstack/react-router' {
       path: '/school'
       fullPath: '/school'
       preLoaderRoute: typeof SchoolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/post': {
+      id: '/post'
+      path: '/post'
+      fullPath: '/post'
+      preLoaderRoute: typeof PostRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my': {
@@ -452,10 +471,10 @@ declare module '@tanstack/react-router' {
     }
     '/post/$category': {
       id: '/post/$category'
-      path: '/post/$category'
+      path: '/$category'
       fullPath: '/post/$category'
       preLoaderRoute: typeof PostCategoryRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof PostRoute
     }
     '/live/$code': {
       id: '/live/$code'
@@ -486,6 +505,16 @@ const ActivitiesRouteWithChildren = ActivitiesRoute._addFileChildren(
   ActivitiesRouteChildren,
 )
 
+interface PostRouteChildren {
+  PostCategoryRoute: typeof PostCategoryRoute
+}
+
+const PostRouteChildren: PostRouteChildren = {
+  PostCategoryRoute: PostCategoryRoute,
+}
+
+const PostRouteWithChildren = PostRoute._addFileChildren(PostRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivitiesRoute: ActivitiesRouteWithChildren,
@@ -498,6 +527,7 @@ const rootRouteChildren: RootRouteChildren = {
   MapRoute: MapRoute,
   MoreRoute: MoreRoute,
   MyRoute: MyRoute,
+  PostRoute: PostRouteWithChildren,
   SchoolRoute: SchoolRoute,
   ShareRoute: ShareRoute,
   StatsRoute: StatsRoute,
@@ -505,7 +535,6 @@ const rootRouteChildren: RootRouteChildren = {
   TripRoute: TripRoute,
   TroubleRoute: TroubleRoute,
   LiveCodeRoute: LiveCodeRoute,
-  PostCategoryRoute: PostCategoryRoute,
   ResolvePostIdRoute: ResolvePostIdRoute,
   TroubleMapRoute: TroubleMapRoute,
 }
