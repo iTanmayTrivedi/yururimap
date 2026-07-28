@@ -126,8 +126,8 @@ function ResolvePage() {
         {t(lang, "承認申請を送信", "Submit for approval")}
       </button>
 
-      <Link to="/map" className="text-xs text-muted-foreground inline-flex items-center gap-1">
-        <ArrowLeft className="w-3 h-3" /> {t(lang, "マップに戻る", "Back to map")}
+      <Link to="/" className="text-xs text-muted-foreground inline-flex items-center gap-1">
+        <ArrowLeft className="w-3 h-3" /> {t(lang, "ホームへ戻る", "Back to home")}
       </Link>
     </div>
   );

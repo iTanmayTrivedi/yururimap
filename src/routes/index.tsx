@@ -1,161 +1,395 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang, t } from "@/lib/i18n";
 import { getSessionId } from "@/lib/session";
-import { CATEGORY_LIST } from "@/lib/categories";
-import { FeedbackDialog } from "@/components/FeedbackDialog";
-import { Bell, MessageCircleHeart, User, ChevronRight, MapPin, Heart, CheckCircle2, Sparkles } from "lucide-react";
+import { demoSnapshot, loadProfile } from "@/lib/profile";
+import { PostsGoogleMap, type MapItem } from "@/components/PostsGoogleMap";
+import { PlaceSearchInput } from "@/components/PlaceSearchInput";
+import { ReportDialog } from "@/components/ReportDialog";
+import { PLACE_RELATIONS, type PostRow } from "@/lib/posts";
+import { activityCategoryOf, scopeGroup, type ActivityRow } from "@/lib/activities";
+import { DEFAULT_CENTER } from "@/lib/gmaps";
+import {
+  Flag, Sparkles, Heart, MapPin, Crosshair, X, Loader2, CheckCircle2, ExternalLink, Plus,
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "みんなの困ったMap / Everyone's Problem Map" },
-      { name: "description", content: "みんなの声で、地域や社会をもっとよくするアプリ。Post local problems by category, see them on the map, and support each other." },
+      { title: "みんなの困ったMap — 地域の困りごとを地図で共有" },
+      { name: "description", content: "地域の「困った」を地図に投稿し、みんなで共感して解決につなげるコミュニティマップ。活動の告知もできます。" },
+      { property: "og:title", content: "みんなの困ったMap — 地域の困りごとを地図で共有" },
+      { property: "og:description", content: "地域の「困った」を地図に投稿し、みんなで共感して解決につなげるコミュニティマップ。" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: HomePage,
 });
 
+type Tab = "local" | "national" | "online";
+
 function HomePage() {
   const { lang } = useLang();
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [sid, setSid] = useState("");
-  useEffect(() => { setSid(getSessionId()); }, []);
+  const qc = useQueryClient();
+  const [tab, setTab] = useState<Tab>("local");
+  const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [reportTarget, setReportTarget] = useState<{ post_id?: string; activity_id?: string } | null>(null);
+  const [limit, setLimit] = useState(10);
 
-  const statsQ = useQuery({
-    queryKey: ["home-stats", sid],
+  const postsQ = useQuery({
+    queryKey: ["home-posts"],
     queryFn: async () => {
-      const [posts, likes, resolved] = await Promise.all([
-        supabase.from("posts").select("id", { count: "exact", head: true }).eq("hidden", false),
-        supabase.from("post_likes").select("id", { count: "exact", head: true }).eq("session_id", sid || "__none__"),
-        supabase.from("posts").select("id", { count: "exact", head: true }).eq("resolved", true),
-      ]);
-      return {
-        total: posts.count ?? 0,
-        myMeToo: likes.count ?? 0,
-        resolved: resolved.count ?? 0,
-      };
+      const { data, error } = await supabase.from("posts")
+        .select("*").eq("hidden", false)
+        .order("created_at", { ascending: false }).limit(300);
+      if (error) throw error;
+      return (data ?? []) as unknown as PostRow[];
     },
   });
 
+  const resolvedQ = useQuery({
+    queryKey: ["home-resolved"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("resolution_reports")
+        .select("related_post_id").eq("status", "approved");
+      if (error) throw error;
+      return new Set((data ?? []).map((r: any) => r.related_post_id as string));
+    },
+  });
+
+  const likesQ = useQuery({
+    queryKey: ["home-post-likes"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("post_likes").select("post_id");
+      if (error) throw error;
+      const m = new Map<string, number>();
+      for (const r of data ?? []) {
+        const id = (r as any).post_id as string;
+        m.set(id, (m.get(id) ?? 0) + 1);
+      }
+      return m;
+    },
+  });
+
+  const actsQ = useQuery({
+    queryKey: ["home-activities"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("activities")
+        .select("*").eq("status", "approved").eq("hidden", false)
+        .order("created_at", { ascending: false }).limit(300);
+      if (error) throw error;
+      return (data ?? []) as unknown as ActivityRow[];
+    },
+  });
+
+  const posts = postsQ.data ?? [];
+  const resolved = resolvedQ.data ?? new Set<string>();
+  const likes = likesQ.data ?? new Map<string, number>();
+  const acts = actsQ.data ?? [];
+
+  const shownPosts = tab === "local" ? posts : [];
+  const shownActs = acts.filter((a) => scopeGroup(a.scope) === tab);
+
+  const mapItems: MapItem[] = useMemo(() => {
+    const out: MapItem[] = [];
+    for (const p of shownPosts) {
+      if (p.lat == null || p.lng == null) continue;
+      const isResolved = resolved.has(p.id);
+      out.push({
+        id: `p:${p.id}`, lat: p.lat, lng: p.lng,
+        kind: isResolved ? "resolved" : "problem",
+        count: isResolved ? (p.thanks_count ?? 0) : (likes.get(p.id) ?? 0),
+      });
+    }
+    for (const a of shownActs) {
+      if (a.lat == null || a.lng == null) continue;
+      out.push({ id: `a:${a.id}`, lat: a.lat, lng: a.lng, kind: "activity", count: 0 });
+    }
+    return out;
+  }, [shownPosts, shownActs, resolved, likes]);
+
+  const homeCenter = useMemo(() => {
+    const p = loadProfile();
+    if (p.homeLat != null && p.homeLng != null) return { lat: p.homeLat, lng: p.homeLng };
+    return DEFAULT_CENTER;
+  }, []);
+
+  function useCurrentLocation() {
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => toast.error(t(lang, "位置情報を取得できません", "Could not get location")),
+    );
+  }
+
+  async function meToo(postId: string) {
+    try {
+      const { error } = await supabase.from("post_likes").insert({
+        post_id: postId, session_id: getSessionId(), ...demoSnapshot(),
+      } as any);
+      if (error) {
+        if (error.code === "23505") { toast.info(t(lang, "すでに共感しています", "You already reacted")); return; }
+        throw error;
+      }
+      toast.success(t(lang, "「私も困ってる」を送りました", "Sent!"));
+      qc.invalidateQueries({ queryKey: ["home-post-likes"] });
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  async function thanks(postId: string) {
+    try {
+      const { error } = await supabase.from("post_thanks").insert({
+        post_id: postId, session_id: getSessionId(),
+      } as any);
+      if (error) {
+        if (error.code === "23505") { toast.info(t(lang, "すでにありがとうを送りました", "Already thanked")); return; }
+        throw error;
+      }
+      toast.success(t(lang, "ありがとうを送りました！", "Thank you sent!"));
+      qc.invalidateQueries({ queryKey: ["home-posts"] });
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  const listPosts = shownPosts.slice(0, limit);
+  const selPost = selected?.startsWith("p:") ? posts.find((p) => p.id === selected.slice(2)) ?? null : null;
+  const selAct = selected?.startsWith("a:") ? acts.find((a) => a.id === selected.slice(2)) ?? null : null;
+  const loading = postsQ.isLoading || actsQ.isLoading;
+
   return (
     <div className="space-y-4">
-      {/* Top row: My Page + Feedback + Announcements */}
-      <div className="flex items-center justify-between gap-2 -mt-1">
-        <Link to="/my"
-          className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 pl-1.5 pr-3 py-1 shadow-sm active:scale-[0.98]">
-          <span className="w-7 h-7 rounded-full bg-white border border-sky-200 flex items-center justify-center">
-            <User className="w-4 h-4 text-sky-700" />
-          </span>
-          <span className="text-[11px] font-bold text-sky-800 leading-tight">
-            {t(lang, "マイページ", "My Page")}
-            <span className="block text-[9px] font-normal text-sky-700/70">
-              {t(lang, "投稿履歴・統計確認", "History & stats")}
-            </span>
-          </span>
-          <ChevronRight className="w-3.5 h-3.5 text-sky-600" />
-        </Link>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setFeedbackOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-[11px] font-semibold text-pink-700 shadow-sm active:scale-[0.97]">
-            <MessageCircleHeart className="w-3.5 h-3.5" /> {t(lang, "ご意見", "Feedback")}
-          </button>
-          <Link to="/announcements"
-            className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-800 shadow-sm">
-            <Bell className="w-3.5 h-3.5" /> {t(lang, "お知らせ", "News")}
-          </Link>
-        </div>
-      </div>
-
-      {/* Hero prompt */}
-      <div className="text-center py-2">
-        <div className="inline-flex items-center gap-2 text-base font-extrabold">
-          <span className="text-lg">〜</span>
-          {t(lang, "どんなことに困っている？", "What are you troubled by?")}
-          <span className="text-lg">〜</span>
-        </div>
-        <p className="text-[11px] text-muted-foreground mt-1">
-          {t(lang, "気になるテーマをタップしてね", "Tap a theme to get started")}
-        </p>
-      </div>
-
-      {/* 4 category tiles */}
+      {/* Primary actions */}
       <div className="grid grid-cols-2 gap-3">
-        {CATEGORY_LIST.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link key={c.id} to="/post/$category" params={{ category: c.id }}
-              className="rounded-2xl border p-4 flex flex-col items-center text-center shadow-sm active:scale-[0.97] transition"
-              style={{ backgroundColor: c.soft, borderColor: `${c.color}66` }}>
-              <span className="w-14 h-14 rounded-full bg-white border-2 flex items-center justify-center mb-2 shadow-sm"
-                style={{ borderColor: c.color }}>
-                <Icon className="w-7 h-7" style={{ color: c.color }} />
-              </span>
-              <span className="text-sm font-extrabold" style={{ color: c.color }}>
-                {lang === "ja" ? c.ja : c.en}
-              </span>
-              <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-                {c.id === "kurashi" && t(lang, "住まい・公園・病院など", "Home, parks, health")}
-                {c.id === "community" && t(lang, "地域活動・イベント・ボランティア", "Local events & volunteer")}
-                {c.id === "business" && t(lang, "働き方・会社・仕事など", "Work & business")}
-                {c.id === "education" && t(lang, "学校・学び・習いごとなど", "School & learning")}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Map preview link + activities entrance */}
-      <div className="grid grid-cols-2 gap-2">
-        <Link to="/map"
-          className="rounded-2xl border border-rose-200 bg-white p-3 shadow-sm active:scale-[0.98] flex flex-col gap-1">
-          <span className="text-lg">🗺️</span>
-          <div className="text-sm font-extrabold text-rose-600">{t(lang, "困ったマップ", "Problem Map")}</div>
-          <div className="text-[10px] text-muted-foreground">{t(lang, "地域の「困った」を地図で", "See problems on the map")}</div>
+        <Link to="/post"
+          className="rounded-2xl px-3 py-4 text-white font-extrabold text-sm flex flex-col items-center gap-1.5 shadow-md active:scale-[0.98]"
+          style={{ backgroundColor: "#38BDF8" }}>
+          <Flag className="w-6 h-6" />
+          {t(lang, "困ったを投稿", "Post a problem")}
         </Link>
-        <Link to="/activities"
-          className="rounded-2xl border border-emerald-200 bg-white p-3 shadow-sm active:scale-[0.98] flex flex-col gap-1">
-          <span className="text-lg inline-flex items-center gap-1"><Sparkles className="w-4 h-4 text-emerald-600" /></span>
-          <div className="text-sm font-extrabold text-emerald-700">{t(lang, "活動マップ", "Activity Map")}</div>
-          <div className="text-[10px] text-muted-foreground">{t(lang, "取り組みを見る・投稿する", "See & post activities")}</div>
+        <Link to="/activities/new"
+          className="rounded-2xl px-3 py-4 text-white font-extrabold text-sm flex flex-col items-center gap-1.5 shadow-md active:scale-[0.98]"
+          style={{ backgroundColor: "#10B981" }}>
+          <Sparkles className="w-6 h-6" />
+          {t(lang, "活動を投稿", "Post an activity")}
         </Link>
       </div>
 
-      {/* Stats footer */}
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label={t(lang, "今日の投稿", "Posts")} value={statsQ.data?.total ?? 0} color="#10B981" icon={MapPin} />
-        <Stat label={t(lang, "私も困った", "Me too")} value={statsQ.data?.myMeToo ?? 0} color="#EC4899" icon={Heart} />
-        <Stat label={t(lang, "解決済", "Resolved")} value={statsQ.data?.resolved ?? 0} color="#F97316" icon={CheckCircle2} />
+      {/* Scope tabs */}
+      <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-muted">
+        {([
+          { id: "local" as Tab, ja: "地域", en: "Local" },
+          { id: "national" as Tab, ja: "全国", en: "Nationwide" },
+          { id: "online" as Tab, ja: "オンライン", en: "Online" },
+        ]).map((x) => (
+          <button key={x.id} onClick={() => { setTab(x.id); setLimit(10); }}
+            className={`min-h-[38px] rounded-xl text-xs font-bold transition-colors ${
+              tab === x.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
+            {lang === "ja" ? x.ja : x.en}
+          </button>
+        ))}
       </div>
 
-      {/* Activity submission CTA */}
-      <Link to="/activities/new"
-        className="block rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-3 shadow-md active:scale-[0.98]">
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-            <Sparkles className="w-5 h-5" />
-          </span>
-          <div className="flex-1">
-            <div className="text-sm font-extrabold">{t(lang, "活動を投稿", "Post an activity")}</div>
-            <div className="text-[10px] opacity-90">{t(lang, "地域の取り組みを広めよう", "Share your local initiative")}</div>
-          </div>
-          <ChevronRight className="w-5 h-5" />
+      {/* Search + map */}
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <PlaceSearchInput className="flex-1"
+            onPick={(lat, lng) => setCenter({ lat, lng })} />
+          <button onClick={useCurrentLocation} aria-label={t(lang, "現在地", "Current location")}
+            className="w-11 rounded-xl border border-input bg-card inline-flex items-center justify-center text-sky-500">
+            <Crosshair className="w-4 h-4" />
+          </button>
         </div>
-      </Link>
+        <div className="rounded-2xl overflow-hidden border border-border">
+          <PostsGoogleMap items={mapItems} center={center ?? homeCenter} height={280}
+            onSelect={(id) => setSelected(id)} />
+        </div>
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+          <LegendDot color="#38BDF8" label={t(lang, "困った", "Problem")} />
+          <LegendDot color="#EC4899" label={t(lang, "解決済み", "Resolved")} heart />
+          <LegendDot color="#10B981" label={t(lang, "活動", "Activity")} />
+        </div>
+      </div>
 
-      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      {/* List */}
+      {loading ? (
+        <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+      ) : (
+        <div className="space-y-2">
+          {tab === "local" && listPosts.map((p) => {
+            const isResolved = resolved.has(p.id);
+            const count = isResolved ? (p.thanks_count ?? 0) : (likes.get(p.id) ?? 0);
+            return (
+              <button key={p.id} onClick={() => setSelected(`p:${p.id}`)}
+                className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm active:scale-[0.995]"
+                style={{ borderColor: isResolved ? "#EC489955" : "#38BDF855" }}>
+                <div className="flex gap-3 p-3">
+                  {p.photo_url && <img src={p.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-bold" style={{ color: isResolved ? "#EC4899" : "#0284C7" }}>
+                      {isResolved ? t(lang, "解決済み", "Resolved") : t(lang, "困った", "Problem")}
+                    </div>
+                    <p className="text-sm font-semibold line-clamp-2">{p.description}</p>
+                    {p.place_label && (
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                        <MapPin className="w-3 h-3" /> <span className="truncate">{p.place_label}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="shrink-0 self-center text-center">
+                    <Heart className="w-4 h-4 mx-auto" style={{ color: isResolved ? "#EC4899" : "#38BDF8" }} />
+                    <div className="text-xs font-extrabold">{count}</div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+
+          {shownActs.slice(0, limit).map((a) => {
+            const meta = activityCategoryOf(a.category);
+            return (
+              <button key={a.id} onClick={() => setSelected(`a:${a.id}`)}
+                className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm"
+                style={{ borderColor: `${meta.color}55` }}>
+                <div className="flex gap-3 p-3">
+                  {a.photo_url && <img src={a.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-bold" style={{ color: meta.color }}>
+                      {t(lang, "活動", "Activity")} · {lang === "ja" ? meta.ja : meta.en}
+                    </div>
+                    <p className="text-sm font-bold truncate">{a.title}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{a.description}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+
+          {tab === "local" && listPosts.length === 0 && shownActs.length === 0 && (
+            <EmptyState lang={lang} />
+          )}
+          {tab !== "local" && shownActs.length === 0 && <EmptyState lang={lang} />}
+
+          {(listPosts.length < shownPosts.length || shownActs.length > limit) && (
+            <button onClick={() => setLimit((n) => n + 10)}
+              className="w-full min-h-[44px] rounded-2xl border border-border text-sm font-bold text-muted-foreground inline-flex items-center justify-center gap-1">
+              <Plus className="w-4 h-4" /> {t(lang, "もっと見る", "Show more")}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Detail sheet */}
+      {(selPost || selAct) && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center" onClick={() => setSelected(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative w-full max-w-[430px] bg-card rounded-t-3xl p-4 space-y-3 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-start">
+              <div className="text-sm font-extrabold">
+                {selPost
+                  ? (resolved.has(selPost.id) ? t(lang, "解決済み", "Resolved") : t(lang, "困った", "Problem"))
+                  : t(lang, "活動", "Activity")}
+              </div>
+              <button onClick={() => setSelected(null)} aria-label="close" className="p-1.5 rounded-lg hover:bg-muted">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {selPost && (
+              <>
+                {selPost.photo_url && <img src={selPost.photo_url} alt="" className="w-full h-44 object-cover rounded-xl" />}
+                {selPost.place_label && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="w-3.5 h-3.5" /> {selPost.place_label}
+                  </div>
+                )}
+                <p className="text-sm whitespace-pre-wrap">{selPost.description}</p>
+                {selPost.place_relation && (
+                  <div className="text-[11px] text-muted-foreground">
+                    {t(lang, "この場所との関係", "Relationship")}:{" "}
+                    {PLACE_RELATIONS.find((r) => r.id === selPost.place_relation)?.[lang === "ja" ? "ja" : "en"]}
+                  </div>
+                )}
+                {resolved.has(selPost.id) ? (
+                  <button onClick={() => thanks(selPost.id)}
+                    className="w-full min-h-[48px] rounded-2xl bg-pink-500 text-white font-bold inline-flex items-center justify-center gap-2">
+                    <Heart className="w-4 h-4" /> {t(lang, "ありがとう", "Thank you")} {selPost.thanks_count ?? 0}
+                  </button>
+                ) : (
+                  <button onClick={() => meToo(selPost.id)}
+                    className="w-full min-h-[48px] rounded-2xl text-white font-bold inline-flex items-center justify-center gap-2"
+                    style={{ backgroundColor: "#38BDF8" }}>
+                    <Heart className="w-4 h-4" /> {t(lang, "私も困ってる", "I have this problem too")} {likes.get(selPost.id) ?? 0}
+                  </button>
+                )}
+                <div className="flex gap-2">
+                  <Link to="/resolve/$postId" params={{ postId: selPost.id }}
+                    className="flex-1 min-h-[42px] rounded-xl border border-border text-xs font-bold inline-flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {t(lang, "解決を報告", "Report resolved")}
+                  </Link>
+                  <button onClick={() => setReportTarget({ post_id: selPost.id })}
+                    className="min-h-[42px] px-3 rounded-xl border border-border text-xs text-muted-foreground inline-flex items-center gap-1">
+                    <Flag className="w-3.5 h-3.5" /> {t(lang, "通報", "Report")}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {selAct && (
+              <>
+                {selAct.photo_url && <img src={selAct.photo_url} alt="" className="w-full h-44 object-cover rounded-xl" />}
+                <div className="text-base font-extrabold">{selAct.title}</div>
+                {selAct.place_label && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="w-3.5 h-3.5" /> {selAct.place_label}
+                  </div>
+                )}
+                <p className="text-sm whitespace-pre-wrap">{selAct.description}</p>
+                {[
+                  { url: selAct.apply_url, ja: "申込みはこちら", en: "Apply" },
+                  { url: selAct.homepage_url ?? selAct.official_url, ja: "ホームページ・SNS", en: "Website / SNS" },
+                  { url: selAct.donation_url, ja: "寄付する", en: "Donate" },
+                ].filter((l) => !!l.url).map((l) => (
+                  <a key={l.en} href={l.url as string} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1 text-xs text-emerald-700 underline break-all">
+                    <ExternalLink className="w-3 h-3" /> {lang === "ja" ? l.ja : l.en}
+                  </a>
+                ))}
+                <button onClick={() => setReportTarget({ activity_id: selAct.id })}
+                  className="w-full min-h-[42px] rounded-xl border border-border text-xs text-muted-foreground inline-flex items-center justify-center gap-1">
+                  <Flag className="w-3.5 h-3.5" /> {t(lang, "通報", "Report")}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ReportDialog open={!!reportTarget} onClose={() => setReportTarget(null)} target={reportTarget ?? {}} />
     </div>
   );
 }
 
-function Stat({ label, value, color, icon: Icon }: { label: string; value: number; color: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }) {
+function EmptyState({ lang }: { lang: "ja" | "en" }) {
   return (
-    <div className="rounded-xl bg-white border border-border p-2 text-center shadow-sm">
-      <Icon className="w-4 h-4 mx-auto" style={{ color }} />
-      <div className="text-xl font-extrabold tabular-nums mt-0.5" style={{ color }}>{value}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
+    <div className="py-10 text-center text-sm text-muted-foreground">
+      {t(lang, "まだ投稿がありません。最初の投稿をしてみましょう！", "No posts yet — be the first to share!")}
     </div>
+  );
+}
+
+function LegendDot({ color, label, heart }: { color: string; label: string; heart?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {heart
+        ? <Heart className="w-3 h-3" style={{ color, fill: color }} />
+        : <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />}
+      {label}
+    </span>
   );
 }

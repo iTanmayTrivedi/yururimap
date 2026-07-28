@@ -1,34 +1,50 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Map as MapIcon, Sparkles, Home, Users, Briefcase, GraduationCap, Languages } from "lucide-react";
-import type { ReactNode } from "react";
-import { useLang } from "@/lib/i18n";
+import { useEffect, useState, type ReactNode } from "react";
+import { Menu, X, User, Megaphone, BarChart3, FileText, Sparkles, ShieldCheck, Languages, MessageCircleHeart } from "lucide-react";
+import { useLang, t } from "@/lib/i18n";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
 
-const tabs = [
-  { to: "/map",         icon: MapIcon,        ja: "困ったマップ",   en: "Problem Map", tag: null },
-  { to: "/activities",  icon: Sparkles,       ja: "活動マップ",     en: "Activity Map", tag: null },
-  { to: "/life",        icon: Home,           ja: "暮らし",         en: "Living",      tag: "準備中" },
-  { to: "/community",   icon: Users,          ja: "コミュニティ",   en: "Community",   tag: "準備中" },
-  { to: "/company",     icon: Briefcase,      ja: "ビジネス",       en: "Business",    tag: "準備中" },
-  { to: "/school",      icon: GraduationCap,  ja: "教育",           en: "Education",   tag: "準備中" },
+const menu = [
+  { to: "/my",            icon: User,        ja: "マイページ",   en: "My Page" },
+  { to: "/activities",    icon: Sparkles,    ja: "活動一覧",     en: "Activities" },
+  { to: "/announcements", icon: Megaphone,   ja: "お知らせ",     en: "Announcements" },
+  { to: "/stats",         icon: BarChart3,   ja: "統計",         en: "Statistics" },
+  { to: "/terms",         icon: FileText,    ja: "利用規約・プライバシー", en: "Terms & Privacy" },
+  { to: "/admin",         icon: ShieldCheck, ja: "管理者",       en: "Admin" },
 ] as const;
 
 export function AppLayout({ children }: { children?: ReactNode }) {
   const { lang, setLang } = useLang();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [open, setOpen] = useState(false);
+  const [feedback, setFeedback] = useState(false);
+
+  useEffect(() => { setOpen(false); }, [pathname]);
+
   if (pathname.startsWith("/live/")) {
     return <>{children ?? <Outlet />}</>;
   }
+
   return (
     <div className="min-h-screen bg-background flex justify-center mobile-shell">
       <div className="w-full max-w-[430px] flex flex-col min-h-screen relative">
         <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border px-4 py-3 shadow-sm">
           <div className="relative text-center">
-            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: "#10B981" }}>
-              みんなの<span style={{ color: "#EC4899" }}>困った</span>Map
-            </h1>
-            <p className="text-[10px] font-medium mt-0.5 text-muted-foreground">
-              Everyone&apos;s Problem Map
-            </p>
+            <button
+              onClick={() => setOpen(true)}
+              aria-label="Menu"
+              className="absolute left-0 top-1 inline-flex items-center justify-center w-8 h-8 rounded-md border border-border bg-card text-muted-foreground"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+            <Link to="/" className="block">
+              <h1 className="text-xl font-extrabold tracking-tight" style={{ color: "#10B981" }}>
+                みんなの<span style={{ color: "#EC4899" }}>困った</span>Map
+              </h1>
+              <p className="text-[10px] font-medium mt-0.5 text-muted-foreground">
+                Everyone&apos;s Problem Map
+              </p>
+            </Link>
             <button
               onClick={() => setLang(lang === "ja" ? "en" : "ja")}
               title="Language / 言語"
@@ -39,31 +55,39 @@ export function AppLayout({ children }: { children?: ReactNode }) {
             </button>
           </div>
         </header>
-        <main className="flex-1 pb-28 px-4 pt-5 mobile-main">{children ?? <Outlet />}</main>
-        <nav className="mobile-bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-card border-t border-border shadow-[0_-2px_12px_rgba(0,0,0,0.06)] z-50">
-          <div className="grid grid-cols-6">
-            {tabs.map((t) => {
-              const Icon = t.icon;
-              return (
-                <Link
-                  key={t.to}
-                  to={t.to}
-                  className="flex flex-col items-center justify-center py-2 select-none transition-colors text-muted-foreground relative"
-                  activeProps={{ className: "flex flex-col items-center justify-center py-2 select-none text-primary relative" }}
-                  activeOptions={{ exact: true }}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[9px] mt-0.5 font-medium leading-none text-center">
-                    {lang === "ja" ? t.ja : t.en}
-                  </span>
-                  {t.tag && (
-                    <span className="text-[8px] text-muted-foreground/70 mt-0.5 leading-none">{t.tag}</span>
-                  )}
-                </Link>
-              );
-            })}
+
+        <main className="flex-1 pb-10 px-4 pt-5 mobile-main">{children ?? <Outlet />}</main>
+
+        {open && (
+          <div className="fixed inset-0 z-[60] flex">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+            <div className="relative w-[76%] max-w-[300px] bg-card h-full shadow-xl p-4 space-y-1 overflow-y-auto">
+              <div className="flex items-center justify-between pb-2">
+                <span className="font-extrabold text-sm">{t(lang, "メニュー", "Menu")}</span>
+                <button onClick={() => setOpen(false)} aria-label="Close" className="w-8 h-8 rounded-md border border-border inline-flex items-center justify-center">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {menu.map((m) => {
+                const Icon = m.icon;
+                return (
+                  <Link key={m.to} to={m.to}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold hover:bg-muted">
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                    {lang === "ja" ? m.ja : m.en}
+                  </Link>
+                );
+              })}
+              <button onClick={() => { setOpen(false); setFeedback(true); }}
+                className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold hover:bg-muted">
+                <MessageCircleHeart className="w-4 h-4 text-muted-foreground" />
+                {t(lang, "ご意見・ご要望", "Feedback")}
+              </button>
+            </div>
           </div>
-        </nav>
+        )}
+
+        <FeedbackDialog open={feedback} onClose={() => setFeedback(false)} />
       </div>
     </div>
   );
