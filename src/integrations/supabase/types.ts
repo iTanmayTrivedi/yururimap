@@ -18,12 +18,15 @@ export type Database = {
         Row: {
           activity_type: string
           age_group: string | null
+          apply_url: string | null
           category: string | null
           created_at: string
           description: string
+          donation_url: string | null
           gender: string | null
           hidden: boolean
           home_area: string | null
+          homepage_url: string | null
           id: string
           lat: number | null
           lng: number | null
@@ -41,12 +44,15 @@ export type Database = {
         Insert: {
           activity_type: string
           age_group?: string | null
+          apply_url?: string | null
           category?: string | null
           created_at?: string
           description: string
+          donation_url?: string | null
           gender?: string | null
           hidden?: boolean
           home_area?: string | null
+          homepage_url?: string | null
           id?: string
           lat?: number | null
           lng?: number | null
@@ -64,12 +70,15 @@ export type Database = {
         Update: {
           activity_type?: string
           age_group?: string | null
+          apply_url?: string | null
           category?: string | null
           created_at?: string
           description?: string
+          donation_url?: string | null
           gender?: string | null
           hidden?: boolean
           home_area?: string | null
+          homepage_url?: string | null
           id?: string
           lat?: number | null
           lng?: number | null
@@ -714,6 +723,7 @@ export type Database = {
           official_url: string | null
           photo_url: string | null
           place_label: string | null
+          place_relation: string | null
           resolved: boolean
           session_id: string
           subtopic: string | null
@@ -739,6 +749,7 @@ export type Database = {
           official_url?: string | null
           photo_url?: string | null
           place_label?: string | null
+          place_relation?: string | null
           resolved?: boolean
           session_id: string
           subtopic?: string | null
@@ -764,6 +775,7 @@ export type Database = {
           official_url?: string | null
           photo_url?: string | null
           place_label?: string | null
+          place_relation?: string | null
           resolved?: boolean
           session_id?: string
           subtopic?: string | null
