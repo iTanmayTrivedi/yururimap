@@ -19,8 +19,8 @@ import { Route as MoreRouteImport } from './routes/more'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActivitiesIndexRouteImport } from './routes/activities.index'
 import { Route as ResolvePostIdRouteImport } from './routes/resolve.$postId'
 import { Route as LiveCodeRouteImport } from './routes/live.$code'
 import { Route as ActivitiesNewRouteImport } from './routes/activities.new'
@@ -75,14 +75,14 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ActivitiesRoute = ActivitiesRouteImport.update({
-  id: '/activities',
-  path: '/activities',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivitiesIndexRoute = ActivitiesIndexRouteImport.update({
+  id: '/activities/',
+  path: '/activities/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResolvePostIdRoute = ResolvePostIdRouteImport.update({
@@ -96,14 +96,13 @@ const LiveCodeRoute = LiveCodeRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivitiesNewRoute = ActivitiesNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => ActivitiesRoute,
+  id: '/activities/new',
+  path: '/activities/new',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/activities': typeof ActivitiesRouteWithChildren
   '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
   '/events': typeof EventsRoute
@@ -117,10 +116,10 @@ export interface FileRoutesByFullPath {
   '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
+  '/activities/': typeof ActivitiesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/activities': typeof ActivitiesRouteWithChildren
   '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
   '/events': typeof EventsRoute
@@ -134,11 +133,11 @@ export interface FileRoutesByTo {
   '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
+  '/activities': typeof ActivitiesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/activities': typeof ActivitiesRouteWithChildren
   '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
   '/events': typeof EventsRoute
@@ -152,12 +151,12 @@ export interface FileRoutesById {
   '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
+  '/activities/': typeof ActivitiesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/activities'
     | '/admin'
     | '/announcements'
     | '/events'
@@ -171,10 +170,10 @@ export interface FileRouteTypes {
     | '/activities/new'
     | '/live/$code'
     | '/resolve/$postId'
+    | '/activities/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/activities'
     | '/admin'
     | '/announcements'
     | '/events'
@@ -188,10 +187,10 @@ export interface FileRouteTypes {
     | '/activities/new'
     | '/live/$code'
     | '/resolve/$postId'
+    | '/activities'
   id:
     | '__root__'
     | '/'
-    | '/activities'
     | '/admin'
     | '/announcements'
     | '/events'
@@ -205,11 +204,11 @@ export interface FileRouteTypes {
     | '/activities/new'
     | '/live/$code'
     | '/resolve/$postId'
+    | '/activities/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ActivitiesRoute: typeof ActivitiesRouteWithChildren
   AdminRoute: typeof AdminRoute
   AnnouncementsRoute: typeof AnnouncementsRoute
   EventsRoute: typeof EventsRoute
@@ -220,8 +219,10 @@ export interface RootRouteChildren {
   StatsRoute: typeof StatsRoute
   TermsRoute: typeof TermsRoute
   TripRoute: typeof TripRoute
+  ActivitiesNewRoute: typeof ActivitiesNewRoute
   LiveCodeRoute: typeof LiveCodeRoute
   ResolvePostIdRoute: typeof ResolvePostIdRoute
+  ActivitiesIndexRoute: typeof ActivitiesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -296,18 +297,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/activities': {
-      id: '/activities'
-      path: '/activities'
-      fullPath: '/activities'
-      preLoaderRoute: typeof ActivitiesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activities/': {
+      id: '/activities/'
+      path: '/activities'
+      fullPath: '/activities/'
+      preLoaderRoute: typeof ActivitiesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/resolve/$postId': {
@@ -326,29 +327,16 @@ declare module '@tanstack/react-router' {
     }
     '/activities/new': {
       id: '/activities/new'
-      path: '/new'
+      path: '/activities/new'
       fullPath: '/activities/new'
       preLoaderRoute: typeof ActivitiesNewRouteImport
-      parentRoute: typeof ActivitiesRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface ActivitiesRouteChildren {
-  ActivitiesNewRoute: typeof ActivitiesNewRoute
-}
-
-const ActivitiesRouteChildren: ActivitiesRouteChildren = {
-  ActivitiesNewRoute: ActivitiesNewRoute,
-}
-
-const ActivitiesRouteWithChildren = ActivitiesRoute._addFileChildren(
-  ActivitiesRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ActivitiesRoute: ActivitiesRouteWithChildren,
   AdminRoute: AdminRoute,
   AnnouncementsRoute: AnnouncementsRoute,
   EventsRoute: EventsRoute,
@@ -359,8 +347,10 @@ const rootRouteChildren: RootRouteChildren = {
   StatsRoute: StatsRoute,
   TermsRoute: TermsRoute,
   TripRoute: TripRoute,
+  ActivitiesNewRoute: ActivitiesNewRoute,
   LiveCodeRoute: LiveCodeRoute,
   ResolvePostIdRoute: ResolvePostIdRoute,
+  ActivitiesIndexRoute: ActivitiesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
