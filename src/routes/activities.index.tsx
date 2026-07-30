@@ -10,7 +10,7 @@ import { ACTIVITY_TYPES, ACTIVITY_TYPE_LIST, type ActivityRow, type ActivityType
 import { Sparkles, Plus, Heart, Loader2, MapPin, ExternalLink, Flag } from "lucide-react";
 import { ReportDialog } from "@/components/ReportDialog";
 
-export const Route = createFileRoute("/activities")({
+export const Route = createFileRoute("/activities/")({
   head: () => ({
     meta: [
       { title: "取り組み / Community Activities" },
