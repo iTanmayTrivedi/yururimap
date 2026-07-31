@@ -52,13 +52,12 @@ export const SUPPLY_ITEMS = [
   { id: "sanitary",  ja: "生理用品",     en: "Sanitary products", emoji: "🩸" },
   { id: "diaper",    ja: "おむつ",       en: "Diapers",        emoji: "🧷" },
   { id: "formula",   ja: "粉ミルク",     en: "Baby formula",   emoji: "🍼" },
-  { id: "medicine",  ja: "медicine",     en: "Medicines",      emoji: "💊" },
+  { id: "medicine",  ja: "医薬品",       en: "Medicines",      emoji: "💊" },
   { id: "flashlight",ja: "懐中電灯",     en: "Flashlights",    emoji: "🔦" },
   { id: "battery",   ja: "電池",         en: "Batteries",      emoji: "🔋" },
   { id: "powerbank", ja: "モバイルバッテリー", en: "Power banks", emoji: "🔌" },
   { id: "other",     ja: "その他",       en: "Other",          emoji: "➕" },
 ];
-SUPPLY_ITEMS[7].ja = "医薬品";
 
 export const PROBLEM_ITEMS = [
   { id: "toilet",      ja: "トイレ",       en: "Toilets",           emoji: "🚻" },
