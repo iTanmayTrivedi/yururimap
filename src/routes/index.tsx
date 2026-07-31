@@ -180,7 +180,7 @@ function HomePage() {
       </div>
 
       {/* Scope tabs */}
-      <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-muted">
+      <div className="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-muted">
         {([
           { id: "local" as Tab, ja: "地域", en: "Local" },
           { id: "national" as Tab, ja: "全国", en: "Nationwide" },
@@ -192,7 +192,12 @@ function HomePage() {
             {lang === "ja" ? x.ja : x.en}
           </button>
         ))}
+        <Link to="/shelters"
+          className="min-h-[38px] rounded-xl text-xs font-bold text-muted-foreground flex items-center justify-center">
+          {lang === "ja" ? "災害・避難所" : "Shelters"}
+        </Link>
       </div>
+
 
       {/* Search + map */}
       <div className="space-y-2">
