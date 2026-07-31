@@ -841,6 +841,136 @@ export type Database = {
           },
         ]
       }
+      shelter_posts: {
+        Row: {
+          content: string
+          created_at: string
+          hidden: boolean
+          id: string
+          photo_url: string | null
+          session_id: string
+          shelter_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          photo_url?: string | null
+          session_id: string
+          shelter_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          photo_url?: string | null
+          session_id?: string
+          shelter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shelter_posts_shelter_id_fkey"
+            columns: ["shelter_id"]
+            isOneToOne: false
+            referencedRelation: "shelters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shelter_status_votes: {
+        Row: {
+          created_at: string
+          id: string
+          item_key: string
+          kind: string
+          session_id: string
+          shelter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_key: string
+          kind: string
+          session_id: string
+          shelter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_key?: string
+          kind?: string
+          session_id?: string
+          shelter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shelter_status_votes_shelter_id_fkey"
+            columns: ["shelter_id"]
+            isOneToOne: false
+            referencedRelation: "shelters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shelters: {
+        Row: {
+          address: string | null
+          admin_session_id: string | null
+          announcement: string | null
+          created_at: string
+          crowdedness: string
+          hidden: boolean
+          id: string
+          info_url: string | null
+          lat: number | null
+          lng: number | null
+          name: string
+          needed_supplies: string[]
+          pet_status: string
+          problem_categories: string[]
+          surplus_supplies: string[]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          admin_session_id?: string | null
+          announcement?: string | null
+          created_at?: string
+          crowdedness?: string
+          hidden?: boolean
+          id?: string
+          info_url?: string | null
+          lat?: number | null
+          lng?: number | null
+          name: string
+          needed_supplies?: string[]
+          pet_status?: string
+          problem_categories?: string[]
+          surplus_supplies?: string[]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          admin_session_id?: string | null
+          announcement?: string | null
+          created_at?: string
+          crowdedness?: string
+          hidden?: boolean
+          id?: string
+          info_url?: string | null
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          needed_supplies?: string[]
+          pet_status?: string
+          problem_categories?: string[]
+          surplus_supplies?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       submissions: {
         Row: {
           exact_lat: number | null

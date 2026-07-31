@@ -20,10 +20,13 @@ import { Route as EventsRouteImport } from './routes/events'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SheltersIndexRouteImport } from './routes/shelters.index'
 import { Route as ActivitiesIndexRouteImport } from './routes/activities.index'
+import { Route as SheltersIdRouteImport } from './routes/shelters.$id'
 import { Route as ResolvePostIdRouteImport } from './routes/resolve.$postId'
 import { Route as LiveCodeRouteImport } from './routes/live.$code'
 import { Route as ActivitiesNewRouteImport } from './routes/activities.new'
+import { Route as SheltersIdAdminRouteImport } from './routes/shelters.$id.admin'
 
 const TripRoute = TripRouteImport.update({
   id: '/trip',
@@ -80,9 +83,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SheltersIndexRoute = SheltersIndexRouteImport.update({
+  id: '/shelters/',
+  path: '/shelters/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ActivitiesIndexRoute = ActivitiesIndexRouteImport.update({
   id: '/activities/',
   path: '/activities/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SheltersIdRoute = SheltersIdRouteImport.update({
+  id: '/shelters/$id',
+  path: '/shelters/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResolvePostIdRoute = ResolvePostIdRouteImport.update({
@@ -100,6 +113,11 @@ const ActivitiesNewRoute = ActivitiesNewRouteImport.update({
   path: '/activities/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SheltersIdAdminRoute = SheltersIdAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => SheltersIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,7 +134,10 @@ export interface FileRoutesByFullPath {
   '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
+  '/shelters/$id': typeof SheltersIdRouteWithChildren
   '/activities/': typeof ActivitiesIndexRoute
+  '/shelters/': typeof SheltersIndexRoute
+  '/shelters/$id/admin': typeof SheltersIdAdminRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,7 +154,10 @@ export interface FileRoutesByTo {
   '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
+  '/shelters/$id': typeof SheltersIdRouteWithChildren
   '/activities': typeof ActivitiesIndexRoute
+  '/shelters': typeof SheltersIndexRoute
+  '/shelters/$id/admin': typeof SheltersIdAdminRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -151,7 +175,10 @@ export interface FileRoutesById {
   '/activities/new': typeof ActivitiesNewRoute
   '/live/$code': typeof LiveCodeRoute
   '/resolve/$postId': typeof ResolvePostIdRoute
+  '/shelters/$id': typeof SheltersIdRouteWithChildren
   '/activities/': typeof ActivitiesIndexRoute
+  '/shelters/': typeof SheltersIndexRoute
+  '/shelters/$id/admin': typeof SheltersIdAdminRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -170,7 +197,10 @@ export interface FileRouteTypes {
     | '/activities/new'
     | '/live/$code'
     | '/resolve/$postId'
+    | '/shelters/$id'
     | '/activities/'
+    | '/shelters/'
+    | '/shelters/$id/admin'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -187,7 +217,10 @@ export interface FileRouteTypes {
     | '/activities/new'
     | '/live/$code'
     | '/resolve/$postId'
+    | '/shelters/$id'
     | '/activities'
+    | '/shelters'
+    | '/shelters/$id/admin'
   id:
     | '__root__'
     | '/'
@@ -204,7 +237,10 @@ export interface FileRouteTypes {
     | '/activities/new'
     | '/live/$code'
     | '/resolve/$postId'
+    | '/shelters/$id'
     | '/activities/'
+    | '/shelters/'
+    | '/shelters/$id/admin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,7 +258,9 @@ export interface RootRouteChildren {
   ActivitiesNewRoute: typeof ActivitiesNewRoute
   LiveCodeRoute: typeof LiveCodeRoute
   ResolvePostIdRoute: typeof ResolvePostIdRoute
+  SheltersIdRoute: typeof SheltersIdRouteWithChildren
   ActivitiesIndexRoute: typeof ActivitiesIndexRoute
+  SheltersIndexRoute: typeof SheltersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -304,11 +342,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shelters/': {
+      id: '/shelters/'
+      path: '/shelters'
+      fullPath: '/shelters/'
+      preLoaderRoute: typeof SheltersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/activities/': {
       id: '/activities/'
       path: '/activities'
       fullPath: '/activities/'
       preLoaderRoute: typeof ActivitiesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shelters/$id': {
+      id: '/shelters/$id'
+      path: '/shelters/$id'
+      fullPath: '/shelters/$id'
+      preLoaderRoute: typeof SheltersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/resolve/$postId': {
@@ -332,8 +384,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivitiesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shelters/$id/admin': {
+      id: '/shelters/$id/admin'
+      path: '/admin'
+      fullPath: '/shelters/$id/admin'
+      preLoaderRoute: typeof SheltersIdAdminRouteImport
+      parentRoute: typeof SheltersIdRoute
+    }
   }
 }
+
+interface SheltersIdRouteChildren {
+  SheltersIdAdminRoute: typeof SheltersIdAdminRoute
+}
+
+const SheltersIdRouteChildren: SheltersIdRouteChildren = {
+  SheltersIdAdminRoute: SheltersIdAdminRoute,
+}
+
+const SheltersIdRouteWithChildren = SheltersIdRoute._addFileChildren(
+  SheltersIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -350,7 +421,9 @@ const rootRouteChildren: RootRouteChildren = {
   ActivitiesNewRoute: ActivitiesNewRoute,
   LiveCodeRoute: LiveCodeRoute,
   ResolvePostIdRoute: ResolvePostIdRoute,
+  SheltersIdRoute: SheltersIdRouteWithChildren,
   ActivitiesIndexRoute: ActivitiesIndexRoute,
+  SheltersIndexRoute: SheltersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
