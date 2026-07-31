@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useLang, t } from "@/lib/i18n";
 import { ShelterList } from "@/components/ShelterList";
 
-export const Route = createFileRoute("/shelters")({
+export const Route = createFileRoute("/shelters/")({
   head: () => ({
     meta: [
       { title: "災害・避難所 — みんなの困ったMap" },
