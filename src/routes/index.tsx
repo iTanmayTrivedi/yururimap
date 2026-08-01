@@ -13,6 +13,8 @@ import { ReportDialog } from "@/components/ReportDialog";
 import { PLACE_RELATIONS, type PostRow } from "@/lib/posts";
 import { activityCategoryOf, scopeGroup, type ActivityRow } from "@/lib/activities";
 import { DEFAULT_CENTER } from "@/lib/gmaps";
+import { useIsAdmin, ModerationBar, AdminEditDialog, type EditField, type ModTable } from "@/lib/admin";
+
 import {
   Flag, Sparkles, Heart, MapPin, Crosshair, X, Loader2, CheckCircle2, ExternalLink, Plus, ShieldCheck,
 } from "lucide-react";
