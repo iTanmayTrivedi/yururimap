@@ -224,10 +224,12 @@ function VoteSection({ title, items, kind, counts, onVote, lang, accent, extra }
 function ShelterPosts({ shelterId, canModerate }: { shelterId: string; canModerate: boolean }) {
   const { lang } = useLang();
   const qc = useQueryClient();
+  const { isAdmin } = useIsAdmin();
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editPost, setEditPost] = useState<{ id: string; content: string } | null>(null);
 
   useEffect(() => {
     if (!file) { setPreview(null); return; }
@@ -237,15 +239,16 @@ function ShelterPosts({ shelterId, canModerate }: { shelterId: string; canModera
   }, [file]);
 
   const postsQ = useQuery({
-    queryKey: ["shelter-posts", shelterId],
+    queryKey: ["shelter-posts", shelterId, isAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase.from("shelter_posts" as any)
-        .select("*").eq("shelter_id", shelterId).eq("hidden", false)
-        .order("created_at", { ascending: false }).limit(200);
+      let query = supabase.from("shelter_posts" as any).select("*").eq("shelter_id", shelterId);
+      if (!isAdmin) query = query.eq("hidden", false);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
       if (error) throw error;
       return (data ?? []) as unknown as ShelterPostRow[];
     },
   });
+
 
   async function submit() {
     if (!text.trim() && !file) { toast.error(t(lang, "内容を入力してください", "Please write something")); return; }
