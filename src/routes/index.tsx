@@ -14,7 +14,7 @@ import { PLACE_RELATIONS, type PostRow } from "@/lib/posts";
 import { activityCategoryOf, scopeGroup, type ActivityRow } from "@/lib/activities";
 import { DEFAULT_CENTER } from "@/lib/gmaps";
 import {
-  Flag, Sparkles, Heart, MapPin, Crosshair, X, Loader2, CheckCircle2, ExternalLink, Plus,
+  Flag, Sparkles, Heart, MapPin, Crosshair, X, Loader2, CheckCircle2, ExternalLink, Plus, ShieldCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
