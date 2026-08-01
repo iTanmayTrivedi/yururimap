@@ -236,50 +236,82 @@ function HomePage() {
             const isResolved = resolved.has(p.id);
             const count = isResolved ? (p.thanks_count ?? 0) : (likes.get(p.id) ?? 0);
             return (
-              <button key={p.id} onClick={() => setSelected(`p:${p.id}`)}
-                className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm active:scale-[0.995]"
-                style={{ borderColor: isResolved ? "#EC489955" : "#38BDF855" }}>
-                <div className="flex gap-3 p-3">
-                  {p.photo_url && <img src={p.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[10px] font-bold" style={{ color: isResolved ? "#EC4899" : "#0284C7" }}>
-                      {isResolved ? t(lang, "解決済み", "Resolved") : t(lang, "困った", "Problem")}
-                    </div>
-                    <p className="text-sm font-semibold line-clamp-2">{p.description}</p>
-                    {p.place_label && (
-                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-                        <MapPin className="w-3 h-3" /> <span className="truncate">{p.place_label}</span>
+              <div key={p.id} className="relative">
+                <button onClick={() => setSelected(`p:${p.id}`)}
+                  className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm active:scale-[0.995]"
+                  style={{ borderColor: isResolved ? "#EC489955" : "#38BDF855", opacity: p.hidden ? 0.55 : 1 }}>
+                  <div className="flex gap-3 p-3">
+                    {p.photo_url && <img src={p.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-bold" style={{ color: isResolved ? "#EC4899" : "#0284C7" }}>
+                        {isResolved ? t(lang, "解決済み", "Resolved") : t(lang, "困った", "Problem")}
+                        {p.hidden && <span className="ml-1 text-muted-foreground">· {t(lang, "非公開", "Unpublished")}</span>}
                       </div>
-                    )}
+                      <p className="text-sm font-semibold line-clamp-2">{p.description}</p>
+                      {p.place_label && (
+                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                          <MapPin className="w-3 h-3" /> <span className="truncate">{p.place_label}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className={`shrink-0 self-center text-center ${isAdmin ? "pt-8" : ""}`}>
+                      <Heart className="w-4 h-4 mx-auto" style={{ color: isResolved ? "#EC4899" : "#38BDF8" }} />
+                      <div className="text-xs font-extrabold">{count}</div>
+                    </div>
                   </div>
-                  <div className="shrink-0 self-center text-center">
-                    <Heart className="w-4 h-4 mx-auto" style={{ color: isResolved ? "#EC4899" : "#38BDF8" }} />
-                    <div className="text-xs font-extrabold">{count}</div>
+                </button>
+                {isAdmin && (
+                  <div className="absolute top-1.5 right-1.5">
+                    <ModerationBar table="posts" id={p.id} hidden={!!p.hidden} compact invalidate={invalidate}
+                      onEdit={() => setEditTarget({
+                        table: "posts", id: p.id,
+                        fields: [
+                          { key: "description", label: t(lang, "内容", "Description"), value: p.description ?? "", multiline: true },
+                          { key: "place_label", label: t(lang, "場所", "Place"), value: p.place_label ?? "" },
+                        ],
+                      })} />
                   </div>
-                </div>
-              </button>
+                )}
+              </div>
             );
           })}
 
           {shownActs.slice(0, limit).map((a) => {
             const meta = activityCategoryOf(a.category);
             return (
-              <button key={a.id} onClick={() => setSelected(`a:${a.id}`)}
-                className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm"
-                style={{ borderColor: `${meta.color}55` }}>
-                <div className="flex gap-3 p-3">
-                  {a.photo_url && <img src={a.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[10px] font-bold" style={{ color: meta.color }}>
-                      {t(lang, "活動", "Activity")} · {lang === "ja" ? meta.ja : meta.en}
+              <div key={a.id} className="relative">
+                <button onClick={() => setSelected(`a:${a.id}`)}
+                  className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm"
+                  style={{ borderColor: `${meta.color}55`, opacity: a.hidden ? 0.55 : 1 }}>
+                  <div className="flex gap-3 p-3">
+                    {a.photo_url && <img src={a.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
+                    <div className={`min-w-0 flex-1 ${isAdmin ? "pr-24" : ""}`}>
+                      <div className="text-[10px] font-bold" style={{ color: meta.color }}>
+                        {t(lang, "活動", "Activity")} · {lang === "ja" ? meta.ja : meta.en}
+                        {a.hidden && <span className="ml-1 text-muted-foreground">· {t(lang, "非公開", "Unpublished")}</span>}
+                      </div>
+                      <p className="text-sm font-bold truncate">{a.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{a.description}</p>
                     </div>
-                    <p className="text-sm font-bold truncate">{a.title}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{a.description}</p>
                   </div>
-                </div>
-              </button>
+                </button>
+                {isAdmin && (
+                  <div className="absolute top-1.5 right-1.5">
+                    <ModerationBar table="activities" id={a.id} hidden={!!a.hidden} compact invalidate={invalidate}
+                      onEdit={() => setEditTarget({
+                        table: "activities", id: a.id,
+                        fields: [
+                          { key: "title", label: t(lang, "タイトル", "Title"), value: a.title ?? "" },
+                          { key: "description", label: t(lang, "内容", "Description"), value: a.description ?? "", multiline: true },
+                          { key: "place_label", label: t(lang, "場所", "Place"), value: a.place_label ?? "" },
+                        ],
+                      })} />
+                  </div>
+                )}
+              </div>
             );
           })}
+
 
           {tab === "local" && listPosts.length === 0 && shownActs.length === 0 && (
             <EmptyState lang={lang} />
