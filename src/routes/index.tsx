@@ -84,15 +84,16 @@ function HomePage() {
   });
 
   const actsQ = useQuery({
-    queryKey: ["home-activities"],
+    queryKey: ["home-activities", isAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase.from("activities")
-        .select("*").eq("status", "approved").eq("hidden", false)
-        .order("created_at", { ascending: false }).limit(300);
+      let query = supabase.from("activities").select("*").eq("status", "approved");
+      if (!isAdmin) query = query.eq("hidden", false);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(300);
       if (error) throw error;
       return (data ?? []) as unknown as ActivityRow[];
     },
   });
+
 
   const posts = postsQ.data ?? [];
   const resolved = resolvedQ.data ?? new Set<string>();
