@@ -8,7 +8,7 @@ import { Trash2, Eye, EyeOff, Pencil, Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang, t } from "@/lib/i18n";
 
-export type ModTable = "posts" | "activities" | "shelter_posts" | "shelters";
+export type ModTable = "posts" | "activities" | "shelter_posts" | "shelters" | "disaster_ideas";
 
 export function useIsAdmin() {
   const q = useQuery({
