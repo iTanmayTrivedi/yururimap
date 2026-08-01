@@ -170,7 +170,16 @@ function HomePage() {
 
   return (
     <div className="space-y-4">
+      {isAdmin && (
+        <Link to="/admin"
+          className="flex items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">
+          <ShieldCheck className="w-4 h-4" />
+          {t(lang, "管理者としてログイン中 — 各投稿の削除・非公開・修正ができます", "Signed in as admin — you can delete, unpublish or edit any post")}
+        </Link>
+      )}
+
       {/* Primary actions */}
+
       <div className="grid grid-cols-2 gap-3">
         <Link to="/post"
           className="rounded-2xl px-3 py-4 text-white font-extrabold text-sm flex flex-col items-center gap-1.5 shadow-md active:scale-[0.98]"
