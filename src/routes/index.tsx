@@ -43,17 +43,21 @@ function HomePage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [reportTarget, setReportTarget] = useState<{ post_id?: string; activity_id?: string } | null>(null);
   const [limit, setLimit] = useState(10);
+  const { isAdmin } = useIsAdmin();
+  const [editTarget, setEditTarget] = useState<{ table: ModTable; id: string; fields: EditField[] } | null>(null);
+  const invalidate = [["home-posts"], ["home-activities"]];
 
   const postsQ = useQuery({
-    queryKey: ["home-posts"],
+    queryKey: ["home-posts", isAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase.from("posts")
-        .select("*").eq("hidden", false)
-        .order("created_at", { ascending: false }).limit(300);
+      let query = supabase.from("posts").select("*");
+      if (!isAdmin) query = query.eq("hidden", false);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(300);
       if (error) throw error;
       return (data ?? []) as unknown as PostRow[];
     },
   });
+
 
   const resolvedQ = useQuery({
     queryKey: ["home-resolved"],
