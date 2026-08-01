@@ -16,6 +16,7 @@ import { Route as ShareRouteImport } from './routes/share'
 import { Route as PostRouteImport } from './routes/post'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as MoreRouteImport } from './routes/more'
+import { Route as IdeasRouteImport } from './routes/ideas'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -61,6 +62,11 @@ const MyRoute = MyRouteImport.update({
 const MoreRoute = MoreRouteImport.update({
   id: '/more',
   path: '/more',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IdeasRoute = IdeasRouteImport.update({
+  id: '/ideas',
+  path: '/ideas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsRoute = EventsRouteImport.update({
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
   '/events': typeof EventsRoute
+  '/ideas': typeof IdeasRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
   '/post': typeof PostRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
   '/events': typeof EventsRoute
+  '/ideas': typeof IdeasRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
   '/post': typeof PostRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/announcements': typeof AnnouncementsRoute
   '/events': typeof EventsRoute
+  '/ideas': typeof IdeasRoute
   '/more': typeof MoreRoute
   '/my': typeof MyRoute
   '/post': typeof PostRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/announcements'
     | '/events'
+    | '/ideas'
     | '/more'
     | '/my'
     | '/post'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/announcements'
     | '/events'
+    | '/ideas'
     | '/more'
     | '/my'
     | '/post'
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/announcements'
     | '/events'
+    | '/ideas'
     | '/more'
     | '/my'
     | '/post'
@@ -248,6 +260,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AnnouncementsRoute: typeof AnnouncementsRoute
   EventsRoute: typeof EventsRoute
+  IdeasRoute: typeof IdeasRoute
   MoreRoute: typeof MoreRoute
   MyRoute: typeof MyRoute
   PostRoute: typeof PostRoute
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/more'
       fullPath: '/more'
       preLoaderRoute: typeof MoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ideas': {
+      id: '/ideas'
+      path: '/ideas'
+      fullPath: '/ideas'
+      preLoaderRoute: typeof IdeasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events': {
@@ -411,6 +431,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AnnouncementsRoute: AnnouncementsRoute,
   EventsRoute: EventsRoute,
+  IdeasRoute: IdeasRoute,
   MoreRoute: MoreRoute,
   MyRoute: MyRoute,
   PostRoute: PostRoute,
