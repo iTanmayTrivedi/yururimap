@@ -320,10 +320,20 @@ function ShelterPosts({ shelterId, canModerate }: { shelterId: string; canModera
         </div>
       ) : (
         (postsQ.data ?? []).map((post) => (
-          <div key={post.id} className="rounded-2xl border border-border bg-card p-3 space-y-2">
+          <div key={post.id} className="rounded-2xl border border-border bg-card p-3 space-y-2"
+            style={{ opacity: post.hidden ? 0.55 : 1 }}>
             {post.photo_url && <img src={post.photo_url} alt="" className="w-full h-40 object-cover rounded-xl" />}
             <p className="text-sm whitespace-pre-wrap">{post.content}</p>
-            {canModerate && (
+            {isAdmin ? (
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-muted-foreground">
+                  {post.hidden ? t(lang, "非公開", "Unpublished") : t(lang, "公開中", "Public")}
+                </span>
+                <ModerationBar table="shelter_posts" id={post.id} hidden={!!post.hidden} compact
+                  invalidate={[["shelter-posts", shelterId]]}
+                  onEdit={() => setEditPost({ id: post.id, content: post.content })} />
+              </div>
+            ) : canModerate && (
               <button onClick={() => hide(post.id)}
                 className="text-[11px] text-red-600 font-bold inline-flex items-center gap-1">
                 <X className="w-3 h-3" /> {t(lang, "この投稿を削除", "Delete this post")}
@@ -332,6 +342,12 @@ function ShelterPosts({ shelterId, canModerate }: { shelterId: string; canModera
           </div>
         ))
       )}
+      {editPost && (
+        <AdminEditDialog open table="shelter_posts" id={editPost.id}
+          fields={[{ key: "content", label: t(lang, "内容", "Content"), value: editPost.content, multiline: true }]}
+          invalidate={[["shelter-posts", shelterId]]} onClose={() => setEditPost(null)} />
+      )}
+
     </div>
   );
 }
