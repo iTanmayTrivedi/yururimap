@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang, t } from "@/lib/i18n";
 import { getSessionId } from "@/lib/session";
+import { useIsAdmin, ModerationBar, AdminEditDialog } from "@/lib/admin";
+
 import { PostsGoogleMap } from "@/components/PostsGoogleMap";
 import {
   SUPPLY_ITEMS, PROBLEM_ITEMS, crowdMeta, petMeta, itemLabel,
