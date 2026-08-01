@@ -415,6 +415,11 @@ function HomePage() {
       )}
 
       <ReportDialog open={!!reportTarget} onClose={() => setReportTarget(null)} target={reportTarget ?? {}} />
+      {editTarget && (
+        <AdminEditDialog open table={editTarget.table} id={editTarget.id} fields={editTarget.fields}
+          invalidate={invalidate} onClose={() => setEditTarget(null)} />
+      )}
+
     </div>
   );
 }
