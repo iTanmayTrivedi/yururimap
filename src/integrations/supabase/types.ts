@@ -148,6 +148,42 @@ export type Database = {
         }
         Relationships: []
       }
+      disaster_ideas: {
+        Row: {
+          body: string
+          category: string | null
+          created_at: string
+          hidden: boolean
+          id: string
+          photo_url: string | null
+          session_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category?: string | null
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          photo_url?: string | null
+          session_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string | null
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          photo_url?: string | null
+          session_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       event_sessions: {
         Row: {
           created_at: string

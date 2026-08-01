@@ -13,8 +13,10 @@ import { ReportDialog } from "@/components/ReportDialog";
 import { PLACE_RELATIONS, type PostRow } from "@/lib/posts";
 import { activityCategoryOf, scopeGroup, type ActivityRow } from "@/lib/activities";
 import { DEFAULT_CENTER } from "@/lib/gmaps";
+import { useIsAdmin, ModerationBar, AdminEditDialog, type EditField, type ModTable } from "@/lib/admin";
+
 import {
-  Flag, Sparkles, Heart, MapPin, Crosshair, X, Loader2, CheckCircle2, ExternalLink, Plus,
+  Flag, Sparkles, Heart, MapPin, Crosshair, X, Loader2, CheckCircle2, ExternalLink, Plus, ShieldCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -41,17 +43,21 @@ function HomePage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [reportTarget, setReportTarget] = useState<{ post_id?: string; activity_id?: string } | null>(null);
   const [limit, setLimit] = useState(10);
+  const { isAdmin } = useIsAdmin();
+  const [editTarget, setEditTarget] = useState<{ table: ModTable; id: string; fields: EditField[] } | null>(null);
+  const invalidate = [["home-posts"], ["home-activities"]];
 
   const postsQ = useQuery({
-    queryKey: ["home-posts"],
+    queryKey: ["home-posts", isAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase.from("posts")
-        .select("*").eq("hidden", false)
-        .order("created_at", { ascending: false }).limit(300);
+      let query = supabase.from("posts").select("*");
+      if (!isAdmin) query = query.eq("hidden", false);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(300);
       if (error) throw error;
       return (data ?? []) as unknown as PostRow[];
     },
   });
+
 
   const resolvedQ = useQuery({
     queryKey: ["home-resolved"],
@@ -78,15 +84,16 @@ function HomePage() {
   });
 
   const actsQ = useQuery({
-    queryKey: ["home-activities"],
+    queryKey: ["home-activities", isAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase.from("activities")
-        .select("*").eq("status", "approved").eq("hidden", false)
-        .order("created_at", { ascending: false }).limit(300);
+      let query = supabase.from("activities").select("*").eq("status", "approved");
+      if (!isAdmin) query = query.eq("hidden", false);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(300);
       if (error) throw error;
       return (data ?? []) as unknown as ActivityRow[];
     },
   });
+
 
   const posts = postsQ.data ?? [];
   const resolved = resolvedQ.data ?? new Set<string>();
@@ -163,7 +170,16 @@ function HomePage() {
 
   return (
     <div className="space-y-4">
+      {isAdmin && (
+        <Link to="/admin"
+          className="flex items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">
+          <ShieldCheck className="w-4 h-4" />
+          {t(lang, "管理者としてログイン中 — 各投稿の削除・非公開・修正ができます", "Signed in as admin — you can delete, unpublish or edit any post")}
+        </Link>
+      )}
+
       {/* Primary actions */}
+
       <div className="grid grid-cols-2 gap-3">
         <Link to="/post"
           className="rounded-2xl px-3 py-4 text-white font-extrabold text-sm flex flex-col items-center gap-1.5 shadow-md active:scale-[0.98]"
@@ -229,50 +245,82 @@ function HomePage() {
             const isResolved = resolved.has(p.id);
             const count = isResolved ? (p.thanks_count ?? 0) : (likes.get(p.id) ?? 0);
             return (
-              <button key={p.id} onClick={() => setSelected(`p:${p.id}`)}
-                className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm active:scale-[0.995]"
-                style={{ borderColor: isResolved ? "#EC489955" : "#38BDF855" }}>
-                <div className="flex gap-3 p-3">
-                  {p.photo_url && <img src={p.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[10px] font-bold" style={{ color: isResolved ? "#EC4899" : "#0284C7" }}>
-                      {isResolved ? t(lang, "解決済み", "Resolved") : t(lang, "困った", "Problem")}
-                    </div>
-                    <p className="text-sm font-semibold line-clamp-2">{p.description}</p>
-                    {p.place_label && (
-                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-                        <MapPin className="w-3 h-3" /> <span className="truncate">{p.place_label}</span>
+              <div key={p.id} className="relative">
+                <button onClick={() => setSelected(`p:${p.id}`)}
+                  className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm active:scale-[0.995]"
+                  style={{ borderColor: isResolved ? "#EC489955" : "#38BDF855", opacity: p.hidden ? 0.55 : 1 }}>
+                  <div className="flex gap-3 p-3">
+                    {p.photo_url && <img src={p.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-bold" style={{ color: isResolved ? "#EC4899" : "#0284C7" }}>
+                        {isResolved ? t(lang, "解決済み", "Resolved") : t(lang, "困った", "Problem")}
+                        {p.hidden && <span className="ml-1 text-muted-foreground">· {t(lang, "非公開", "Unpublished")}</span>}
                       </div>
-                    )}
+                      <p className="text-sm font-semibold line-clamp-2">{p.description}</p>
+                      {p.place_label && (
+                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                          <MapPin className="w-3 h-3" /> <span className="truncate">{p.place_label}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className={`shrink-0 self-center text-center ${isAdmin ? "pt-8" : ""}`}>
+                      <Heart className="w-4 h-4 mx-auto" style={{ color: isResolved ? "#EC4899" : "#38BDF8" }} />
+                      <div className="text-xs font-extrabold">{count}</div>
+                    </div>
                   </div>
-                  <div className="shrink-0 self-center text-center">
-                    <Heart className="w-4 h-4 mx-auto" style={{ color: isResolved ? "#EC4899" : "#38BDF8" }} />
-                    <div className="text-xs font-extrabold">{count}</div>
+                </button>
+                {isAdmin && (
+                  <div className="absolute top-1.5 right-1.5">
+                    <ModerationBar table="posts" id={p.id} hidden={!!p.hidden} compact invalidate={invalidate}
+                      onEdit={() => setEditTarget({
+                        table: "posts", id: p.id,
+                        fields: [
+                          { key: "description", label: t(lang, "内容", "Description"), value: p.description ?? "", multiline: true },
+                          { key: "place_label", label: t(lang, "場所", "Place"), value: p.place_label ?? "" },
+                        ],
+                      })} />
                   </div>
-                </div>
-              </button>
+                )}
+              </div>
             );
           })}
 
           {shownActs.slice(0, limit).map((a) => {
             const meta = activityCategoryOf(a.category);
             return (
-              <button key={a.id} onClick={() => setSelected(`a:${a.id}`)}
-                className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm"
-                style={{ borderColor: `${meta.color}55` }}>
-                <div className="flex gap-3 p-3">
-                  {a.photo_url && <img src={a.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[10px] font-bold" style={{ color: meta.color }}>
-                      {t(lang, "活動", "Activity")} · {lang === "ja" ? meta.ja : meta.en}
+              <div key={a.id} className="relative">
+                <button onClick={() => setSelected(`a:${a.id}`)}
+                  className="w-full text-left rounded-2xl border bg-card overflow-hidden shadow-sm"
+                  style={{ borderColor: `${meta.color}55`, opacity: a.hidden ? 0.55 : 1 }}>
+                  <div className="flex gap-3 p-3">
+                    {a.photo_url && <img src={a.photo_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
+                    <div className={`min-w-0 flex-1 ${isAdmin ? "pr-24" : ""}`}>
+                      <div className="text-[10px] font-bold" style={{ color: meta.color }}>
+                        {t(lang, "活動", "Activity")} · {lang === "ja" ? meta.ja : meta.en}
+                        {a.hidden && <span className="ml-1 text-muted-foreground">· {t(lang, "非公開", "Unpublished")}</span>}
+                      </div>
+                      <p className="text-sm font-bold truncate">{a.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{a.description}</p>
                     </div>
-                    <p className="text-sm font-bold truncate">{a.title}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{a.description}</p>
                   </div>
-                </div>
-              </button>
+                </button>
+                {isAdmin && (
+                  <div className="absolute top-1.5 right-1.5">
+                    <ModerationBar table="activities" id={a.id} hidden={!!a.hidden} compact invalidate={invalidate}
+                      onEdit={() => setEditTarget({
+                        table: "activities", id: a.id,
+                        fields: [
+                          { key: "title", label: t(lang, "タイトル", "Title"), value: a.title ?? "" },
+                          { key: "description", label: t(lang, "内容", "Description"), value: a.description ?? "", multiline: true },
+                          { key: "place_label", label: t(lang, "場所", "Place"), value: a.place_label ?? "" },
+                        ],
+                      })} />
+                  </div>
+                )}
+              </div>
             );
           })}
+
 
           {tab === "local" && listPosts.length === 0 && shownActs.length === 0 && (
             <EmptyState lang={lang} />
@@ -376,6 +424,11 @@ function HomePage() {
       )}
 
       <ReportDialog open={!!reportTarget} onClose={() => setReportTarget(null)} target={reportTarget ?? {}} />
+      {editTarget && (
+        <AdminEditDialog open table={editTarget.table} id={editTarget.id} fields={editTarget.fields}
+          invalidate={invalidate} onClose={() => setEditTarget(null)} />
+      )}
+
     </div>
   );
 }

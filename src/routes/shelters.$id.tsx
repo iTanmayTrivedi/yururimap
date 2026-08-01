@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang, t } from "@/lib/i18n";
 import { getSessionId } from "@/lib/session";
+import { useIsAdmin, ModerationBar, AdminEditDialog } from "@/lib/admin";
+
 import { PostsGoogleMap } from "@/components/PostsGoogleMap";
 import {
   SUPPLY_ITEMS, PROBLEM_ITEMS, crowdMeta, petMeta, itemLabel,
@@ -224,10 +226,12 @@ function VoteSection({ title, items, kind, counts, onVote, lang, accent, extra }
 function ShelterPosts({ shelterId, canModerate }: { shelterId: string; canModerate: boolean }) {
   const { lang } = useLang();
   const qc = useQueryClient();
+  const { isAdmin } = useIsAdmin();
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editPost, setEditPost] = useState<{ id: string; content: string } | null>(null);
 
   useEffect(() => {
     if (!file) { setPreview(null); return; }
@@ -237,15 +241,16 @@ function ShelterPosts({ shelterId, canModerate }: { shelterId: string; canModera
   }, [file]);
 
   const postsQ = useQuery({
-    queryKey: ["shelter-posts", shelterId],
+    queryKey: ["shelter-posts", shelterId, isAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase.from("shelter_posts" as any)
-        .select("*").eq("shelter_id", shelterId).eq("hidden", false)
-        .order("created_at", { ascending: false }).limit(200);
+      let query = supabase.from("shelter_posts" as any).select("*").eq("shelter_id", shelterId);
+      if (!isAdmin) query = query.eq("hidden", false);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
       if (error) throw error;
       return (data ?? []) as unknown as ShelterPostRow[];
     },
   });
+
 
   async function submit() {
     if (!text.trim() && !file) { toast.error(t(lang, "内容を入力してください", "Please write something")); return; }
@@ -320,10 +325,20 @@ function ShelterPosts({ shelterId, canModerate }: { shelterId: string; canModera
         </div>
       ) : (
         (postsQ.data ?? []).map((post) => (
-          <div key={post.id} className="rounded-2xl border border-border bg-card p-3 space-y-2">
+          <div key={post.id} className="rounded-2xl border border-border bg-card p-3 space-y-2"
+            style={{ opacity: post.hidden ? 0.55 : 1 }}>
             {post.photo_url && <img src={post.photo_url} alt="" className="w-full h-40 object-cover rounded-xl" />}
             <p className="text-sm whitespace-pre-wrap">{post.content}</p>
-            {canModerate && (
+            {isAdmin ? (
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-muted-foreground">
+                  {post.hidden ? t(lang, "非公開", "Unpublished") : t(lang, "公開中", "Public")}
+                </span>
+                <ModerationBar table="shelter_posts" id={post.id} hidden={!!post.hidden} compact
+                  invalidate={[["shelter-posts", shelterId]]}
+                  onEdit={() => setEditPost({ id: post.id, content: post.content })} />
+              </div>
+            ) : canModerate && (
               <button onClick={() => hide(post.id)}
                 className="text-[11px] text-red-600 font-bold inline-flex items-center gap-1">
                 <X className="w-3 h-3" /> {t(lang, "この投稿を削除", "Delete this post")}
@@ -332,6 +347,12 @@ function ShelterPosts({ shelterId, canModerate }: { shelterId: string; canModera
           </div>
         ))
       )}
+      {editPost && (
+        <AdminEditDialog open table="shelter_posts" id={editPost.id}
+          fields={[{ key: "content", label: t(lang, "内容", "Content"), value: editPost.content, multiline: true }]}
+          invalidate={[["shelter-posts", shelterId]]} onClose={() => setEditPost(null)} />
+      )}
+
     </div>
   );
 }

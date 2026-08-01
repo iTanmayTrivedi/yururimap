@@ -76,6 +76,9 @@ export type PostRow = {
   thanks_count: number | null;
   lat: number | null;
   lng: number | null;
+  hidden?: boolean;
+  resolved?: boolean;
   created_at: string;
   updated_at: string;
 };
+
